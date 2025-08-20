@@ -35,8 +35,28 @@ dependencies {
 // Apply a specific Java toolchain to ease working on different environments.
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        // Compile sources using an older JDK to avoid removal warnings
+        languageVersion = JavaLanguageVersion.of(8)
     }
+}
+
+sourceSets {
+    main {
+        java {
+            // Exclude optional modules that require additional dependencies
+            exclude 'org/garret/perst/lucene/**'
+            exclude 'org/garret/perst/jassist/**'
+            exclude 'org/garret/perst/continuous/**'
+            exclude 'org/garret/perst/rdf/**'
+            exclude 'org/garret/perst/impl/sun14/**'
+        }
+    }
+}
+
+// Suppress compiler warnings to keep the build output clean
+tasks.withType(JavaCompile).configureEach {
+    options.warnings = false
+    options.compilerArgs += ['-Xlint:-deprecation', '-Xlint:-unchecked']
 }
 
 application {
