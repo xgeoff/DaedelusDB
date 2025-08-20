@@ -1,5 +1,4 @@
 package org.garret.perst;
-import org.garret.perst.impl.StorageImpl;
 
 /**
  * Base class for all persistent capable objects
@@ -12,12 +11,7 @@ public class Persistent extends PinnedPersistent
         super(storage);
     }
 
-    protected void finalize() { 
-        if ((state & DIRTY) != 0 && oid != 0) { 
-            storage.storeFinalizedObject(this);
-        }
-        state = DELETED;
-    }
+    // Cleanup of persistent objects is now managed explicitly; finalization has been removed
 }
 
 

@@ -138,14 +138,14 @@ public final class ClassDescriptor extends Persistent {
         4  // tpEnum
      };
 
-    static final Class[] perstConstructorProfile = new Class[]{ClassDescriptor.class};
+    static final Class<?>[] perstConstructorProfile = new Class<?>[]{ClassDescriptor.class};
 
     static ReflectionProvider getReflectionProvider() { 
         if (reflectionProvider == null) { 
             try {
                 Class.forName("sun.misc.Unsafe");
                 String cls = "org.garret.perst.impl.sun14.Sun14ReflectionProvider";
-                reflectionProvider = (ReflectionProvider)Class.forName(cls).newInstance();
+                reflectionProvider = (ReflectionProvider)Class.forName(cls).getDeclaredConstructor().newInstance();
             } 
             catch (Throwable x) 
             {
@@ -181,8 +181,8 @@ public final class ClassDescriptor extends Persistent {
         }
     }
 
-    void buildFieldList(StorageImpl storage, Class cls, ArrayList list) { 
-        Class superclass = cls.getSuperclass();
+    void buildFieldList(StorageImpl storage, Class<?> cls, List<FieldDescriptor> list) {
+        Class<?> superclass = cls.getSuperclass();
         if (superclass != null) { 
             buildFieldList(storage, superclass, list);
         }
@@ -306,7 +306,7 @@ public final class ClassDescriptor extends Persistent {
 
     ClassDescriptor() {}
 
-    private static Class loadClass(String name) throws ClassNotFoundException { 
+    private static Class<?> loadClass(String name) throws ClassNotFoundException {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         if (loader != null) { 
             try { 
@@ -318,8 +318,8 @@ public final class ClassDescriptor extends Persistent {
 
     private void locateConstructor() { 
         try { 
-            Class c = loadClass(cls.getName() + "LoadFactory");
-            factory = (LoadFactory)c.newInstance();
+            Class<?> c = loadClass(cls.getName() + "LoadFactory");
+            factory = (LoadFactory)c.getDeclaredConstructor().newInstance();
         } catch (Exception x1) { 
             try {             
                 loadConstructor = cls.getDeclaredConstructor(perstConstructorProfile);
@@ -338,20 +338,20 @@ public final class ClassDescriptor extends Persistent {
         }
     }
 
-    ClassDescriptor(StorageImpl storage, Class cls) { 
+    ClassDescriptor(StorageImpl storage, Class<?> cls) {
         this.cls = cls;
         customSerializable = storage.serializer != null && storage.serializer.isApplicable(cls);
         isCollection = Collection.class.isAssignableFrom(cls);
         isMap = Map.class.isAssignableFrom(cls);
         name = getClassName(cls);
-        ArrayList list = new ArrayList();
+        List<FieldDescriptor> list = new ArrayList<>();
         buildFieldList(storage, cls, list);
-        allFields = (FieldDescriptor[])list.toArray(new FieldDescriptor[list.size()]);
+        allFields = list.toArray(new FieldDescriptor[0]);
         locateConstructor();
         resolved = true;
     }
 
-    public static Field locateField(Class scope, String name) { 
+    public static Field locateField(Class<?> scope, String name) {
         try { 
             do { 
                 try { 
@@ -370,14 +370,14 @@ public final class ClassDescriptor extends Persistent {
         return null;
     }
         
-    public static String getClassName(Class cls) { 
+    public static String getClassName(Class<?> cls) {
         ClassLoader loader = cls.getClassLoader();
         return (loader instanceof INamedClassLoader) 
             ? ((INamedClassLoader)loader).getName() + ':' + cls.getName()
             : cls.getName();
     }
         
-    public static Class loadClass(Storage storage, String name) { 
+    public static Class<?> loadClass(Storage storage, String name) {
         if (storage != null) { 
             int col = name.indexOf(':');
             ClassLoader loader;

@@ -71,7 +71,7 @@ public class FullTextSearchHelper extends Persistent
      */
     public Occurrence[] parseText(Reader reader) throws IOException {
         int pos = 0;
-        ArrayList list = new ArrayList();
+        List<Occurrence> list = new ArrayList<>();
         int ch = reader.read();
         
         while (ch > 0) {
@@ -84,7 +84,7 @@ public class FullTextSearchHelper extends Persistent
                     ch = reader.read();
                 } while (ch > 0 && isWordChar((char)ch));
                 String word = buf.toString().toLowerCase();
-                if (word.length() <= maxWordLength && !isStopWord(word)) { 
+                if (word.length() <= maxWordLength && !isStopWord(word)) {
                     list.add(new Occurrence(word, wordPos, 0));
                 }
             } else {
@@ -92,14 +92,14 @@ public class FullTextSearchHelper extends Persistent
                 ch = reader.read();
             }
         }
-        return (Occurrence[])list.toArray(new Occurrence[list.size()]);
+        return list.toArray(new Occurrence[0]);
     }
 
-    protected transient HashSet stopList;
+    protected transient HashSet<String> stopList;
 
     protected void fillStopList() {
-        stopList = new HashSet();
-        for (int i = 0; i < stopWords.length; i++) { 
+        stopList = new HashSet<>();
+        for (int i = 0; i < stopWords.length; i++) {
             stopList.add(stopWords[i]);
         }
     }
