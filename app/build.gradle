@@ -9,8 +9,8 @@ plugins {
     // Apply the groovy plugin to also add support for Groovy (needed for Spock)
     id 'groovy'
 
-    // Apply the application plugin to add support for building a CLI application in Java.
-    id 'application'
+    // Use the java-library plugin so this project builds a reusable library
+    id 'java-library'
 }
 
 repositories {
@@ -28,7 +28,7 @@ dependencies {
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    // This dependency is used by the application.
+    // This dependency is used by the library code.
     implementation libs.guava
 }
 
@@ -52,11 +52,9 @@ sourceSets {
     }
 }
 
-
-
-application {
-    // Define the main class for the application.
-    mainClass = 'org.example.App'
+// Fail loudly on use of deprecated or unsafe APIs
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['-Xlint:deprecation', '-Xlint:unchecked']
 }
 
 tasks.named('test') {

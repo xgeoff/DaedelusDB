@@ -31,9 +31,10 @@ public class FullTextSearchResult {
         FullTextSearchHit[] joinHits = new FullTextSearchHit[hits.length + another.hits.length];
         System.arraycopy(hits, 0, joinHits, 0, hits.length);
         System.arraycopy(another.hits, 0, joinHits, hits.length, another.hits.length);
-        Arrays.sort(joinHits, new Comparator() { 
-            public int compare(Object o1, Object o2) {
-                return ((FullTextSearchHit)o1).oid - ((FullTextSearchHit)o2).oid;
+        Arrays.sort(joinHits, new Comparator<FullTextSearchHit>() {
+            @Override
+            public int compare(FullTextSearchHit o1, FullTextSearchHit o2) {
+                return o1.oid - o2.oid;
             }
         });
         int n = 0;

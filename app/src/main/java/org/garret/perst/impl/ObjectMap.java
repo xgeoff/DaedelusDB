@@ -190,8 +190,8 @@ class ObjectMap
         
         Entry(Object obj, Entry chain)
         {
-            wref = new WeakReference(obj);
-            next = chain;                
+            wref = new WeakReference<>(obj);
+            next = chain;
         }
     }
 }
