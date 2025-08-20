@@ -312,6 +312,7 @@ class PerstDirectory extends Directory
         This replacement should be atomic. 
         * @deprecated 
         */
+    @Deprecated
     public void renameFile(String from, String to) throws IOException {
         impl.renameFile(from, to);
     }

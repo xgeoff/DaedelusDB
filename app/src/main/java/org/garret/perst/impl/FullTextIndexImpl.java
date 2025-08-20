@@ -172,7 +172,7 @@ public class FullTextIndexImpl extends PersistentResource implements FullTextInd
             public Object next() { 
                 final int j = i++;
                 return new Map.Entry() { 
-                        public Object getKey() { return new Integer(oids[j]); }
+                        public Object getKey() { return Integer.valueOf(oids[j]); }
                         public Object getValue() { return docs.get(j); }
                         public Object setValue(Object value) { return null; }
                         public Object setKey(Object key) { return null; }

@@ -433,7 +433,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
 
         Object getKeyValue(int i) { 
-            return new Byte(data[i]);
+            return Byte.valueOf(data[i]);
         }
 
         Key getKey(int i) { 
@@ -495,7 +495,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
 
         Object getKeyValue(int i) { 
-            return new Short(data[i]);
+            return Short.valueOf(data[i]);
         }
 
         BtreePage clonePage() { 
@@ -533,7 +533,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
 
         Object getKeyValue(int i) { 
-            return new Character(data[i]);
+            return Character.valueOf(data[i]);
         }
 
         BtreePage clonePage() { 
@@ -571,7 +571,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
 
         Object getKeyValue(int i) { 
-            return new Integer(data[i]);
+            return Integer.valueOf(data[i]);
         }
 
         BtreePage clonePage() { 
@@ -609,7 +609,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
 
         Object getKeyValue(int i) { 
-            return new Long(data[i]);
+            return Long.valueOf(data[i]);
         }
 
         BtreePage clonePage() { 
@@ -647,7 +647,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
 
         Object getKeyValue(int i) { 
-            return new Float(data[i]);
+            return Float.valueOf(data[i]);
         }
 
         BtreePage clonePage() { 
@@ -685,7 +685,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
 
         Object getKeyValue(int i) { 
-            return new Double(data[i]);
+            return Double.valueOf(data[i]);
         }
 
         BtreePage clonePage() { 

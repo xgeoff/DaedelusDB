@@ -502,23 +502,23 @@ class Btree<T> extends PersistentCollection<T> implements Index<T> {
           case ClassDescriptor.tpBoolean:
               return Boolean.valueOf(data[offs] != 0);
           case ClassDescriptor.tpByte:
-            return new Byte(data[offs]);
+            return Byte.valueOf(data[offs]);
           case ClassDescriptor.tpShort:
-            return new Short(Bytes.unpack2(data, offs));
+            return Short.valueOf(Bytes.unpack2(data, offs));
           case ClassDescriptor.tpChar:
-            return new Character((char)Bytes.unpack2(data, offs));
+            return Character.valueOf((char)Bytes.unpack2(data, offs));
           case ClassDescriptor.tpInt:
-            return new Integer(Bytes.unpack4(data, offs));
+            return Integer.valueOf(Bytes.unpack4(data, offs));
           case ClassDescriptor.tpObject:
             return db.lookupObject(Bytes.unpack4(data, offs), null);
           case ClassDescriptor.tpLong:
-            return new Long(Bytes.unpack8(data, offs));
+            return Long.valueOf(Bytes.unpack8(data, offs));
           case ClassDescriptor.tpDate:
             return new Date(Bytes.unpack8(data, offs));
           case ClassDescriptor.tpFloat:
-            return new Float(Float.intBitsToFloat(Bytes.unpack4(data, offs)));
+            return Float.valueOf(Float.intBitsToFloat(Bytes.unpack4(data, offs)));
           case ClassDescriptor.tpDouble:
-            return new Double(Double.longBitsToDouble(Bytes.unpack8(data, offs)));
+            return Double.valueOf(Double.longBitsToDouble(Bytes.unpack8(data, offs)));
           case ClassDescriptor.tpEnum:
             return unpackEnum(Bytes.unpack4(data, offs));
           case ClassDescriptor.tpString:

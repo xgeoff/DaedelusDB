@@ -98,8 +98,8 @@ class AltBtreeCompoundIndex<T> extends AltBtree<T> implements Index<T> {
                     isCopy = true;
                 }
                 keyComponents[i] = (type == ClassDescriptor.tpObject)
-                    ? (Object)new Integer(keyComponents[i] == null ? 0 : getStorage().getOid(keyComponents[i]))
-                    : (Object)new Byte((byte)(((Boolean)keyComponents[i]).booleanValue() ? 1 : 0));
+                    ? (Object)Integer.valueOf(keyComponents[i] == null ? 0 : getStorage().getOid(keyComponents[i]))
+                    : (Object)Byte.valueOf((byte)(((Boolean)keyComponents[i]).booleanValue() ? 1 : 0));
                 
             }
         }

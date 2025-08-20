@@ -344,7 +344,7 @@ public class VersionedStorage
                     }
                 }
                 if (pos == 0) { 
-                    Integer oid = new Integer(thing.getOid());
+                    Integer oid = Integer.valueOf(thing.getOid());
                     if (visited.contains(oid)) { 
                         continue;
                     } else {

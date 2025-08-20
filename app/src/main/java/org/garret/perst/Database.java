@@ -169,7 +169,8 @@ public class Database implements IndexProvider {
      * database first time (to mark fields for which indices should be created, use Indexable 
      * annotation)
      */
-    public boolean createTable(Class table) { 
+    @Deprecated
+    public boolean createTable(Class table) {
         if (multithreaded) { 
             checkTransaction();
             metadata.exclusiveLock();
@@ -522,7 +523,8 @@ public class Database implements IndexProvider {
      * database first time (to mark fields for which indices should be created, use Indexable 
      * annotation)
      */
-    public boolean createIndex(Class table, String key, int kind) { 
+    @Deprecated
+    public boolean createIndex(Class table, String key, int kind) {
         return createIndex(locateTable(table, true), table, key, kind);
     }
      /**
@@ -539,7 +541,8 @@ public class Database implements IndexProvider {
      * database first time (to mark fields for which indices should be created, use Indexable 
      * annotation)
      */
-    public boolean createIndex(Class table, String key, boolean unique) { 
+    @Deprecated
+    public boolean createIndex(Class table, String key, boolean unique) {
         return createIndex(locateTable(table, true), table, key, unique ? INDEX_KIND_UNIQUE : INDEX_KIND_DEFAULT);
     }
     /**
@@ -558,7 +561,8 @@ public class Database implements IndexProvider {
      * database first time (to mark fields for which indices should be created, use Indexable 
      * annotaion)
      */
-    public boolean createIndex(Class table, String key, boolean unique, boolean caseInsensitive, boolean thick) { 
+    @Deprecated
+    public boolean createIndex(Class table, String key, boolean unique, boolean caseInsensitive, boolean thick) {
         int kind = INDEX_KIND_DEFAULT;
         if (unique) kind |= INDEX_KIND_UNIQUE;
         if (caseInsensitive) kind |= INDEX_KIND_CASE_INSENSITIVE;
@@ -582,7 +586,8 @@ public class Database implements IndexProvider {
      * database first time (to mark fields for which indices should be created, use Indexable 
      * annotaion)
      */
-    public boolean createIndex(Class table, String key, boolean unique, boolean caseInsensitive, boolean thick, boolean randomAccess) { 
+    @Deprecated
+    public boolean createIndex(Class table, String key, boolean unique, boolean caseInsensitive, boolean thick, boolean randomAccess) {
         int kind = INDEX_KIND_DEFAULT;
         if (unique) kind |= INDEX_KIND_UNIQUE;
         if (caseInsensitive) kind |= INDEX_KIND_CASE_INSENSITIVE;

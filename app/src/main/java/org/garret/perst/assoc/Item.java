@@ -213,7 +213,7 @@ public class Item extends Persistent implements Comparable<Item>, Iterable<Map.E
                 return arr;
             }
         } else { 
-            return (l < stringFields.length) ? (Object)stringFields[l] : (Object)new Double(numericFields[l - stringFields.length]);
+            return (l < stringFields.length) ? (Object)stringFields[l] : (Object)Double.valueOf(numericFields[l - stringFields.length]);
         }
     }
     
