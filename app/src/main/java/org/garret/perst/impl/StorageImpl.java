@@ -4030,30 +4030,30 @@ public class StorageImpl implements Storage {
                             val = Boolean.valueOf(body[offs++] != 0);
                             break;
                         case ClassDescriptor.tpByte:
-                            val = new Byte(body[offs++]);
+                            val = Byte.valueOf(body[offs++]);
                             break;
                         case ClassDescriptor.tpChar:
-                            val = new Character((char)Bytes.unpack2(body, offs));
+                            val = Character.valueOf((char)Bytes.unpack2(body, offs));
                             offs += 2;
                             break;
                         case ClassDescriptor.tpShort:
-                            val = new Short(Bytes.unpack2(body, offs));
+                            val = Short.valueOf(Bytes.unpack2(body, offs));
                             offs += 2;
                             break;
                         case ClassDescriptor.tpInt:
-                            val = new Integer(Bytes.unpack4(body, offs));
+                            val = Integer.valueOf(Bytes.unpack4(body, offs));
                             offs += 4;
                             break;
                         case ClassDescriptor.tpLong:
-                            val = new Long(Bytes.unpack8(body, offs));
+                            val = Long.valueOf(Bytes.unpack8(body, offs));
                             offs += 8;
                             break;
                         case ClassDescriptor.tpFloat:
-                            val = new Float(Float.intBitsToFloat(Bytes.unpack4(body, offs)));
+                            val = Float.valueOf(Float.intBitsToFloat(Bytes.unpack4(body, offs)));
                             offs += 4;
                             break;
                         case ClassDescriptor.tpDouble:
-                            val = new Double(Double.longBitsToDouble(Bytes.unpack8(body, offs)));
+                            val = Double.valueOf(Double.longBitsToDouble(Bytes.unpack8(body, offs)));
                             offs += 8;
                             break;
                         case ClassDescriptor.tpDate:
@@ -5051,7 +5051,7 @@ public class StorageImpl implements Storage {
             HashSet newResult = new HashSet();
             int oid;
             while ((oid = iterator.nextOid()) != 0) {
-                Integer oidWrapper = new Integer(oid);
+                Integer oidWrapper = Integer.valueOf(oid);
                 if (result == null || result.contains(oidWrapper)) {
                     newResult.add(oidWrapper);
                 }
@@ -5073,7 +5073,7 @@ public class StorageImpl implements Storage {
             PersistentIterator iterator = (PersistentIterator)selections[i];
             int oid;
             while ((oid = iterator.nextOid()) != 0) {
-                result.add(new Integer(oid));
+                result.add(Integer.valueOf(oid));
             }
         }
         return new HashIterator(result);

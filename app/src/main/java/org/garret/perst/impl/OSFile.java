@@ -91,9 +91,9 @@ public class OSFile implements IFile {
 		    Method lock = cls.getMethod("lock", paramType);
 		    if (lock != null) { 
 			Object[] param = new Object[3];
-			param[0] = new Long(0);
-			param[1] = new Long(Long.MAX_VALUE);
-			param[2] = new Boolean(shared);
+			param[0] = Long.valueOf(0);
+			param[1] = Long.valueOf(Long.MAX_VALUE);
+			param[2] = Boolean.valueOf(shared);
 			return lock.invoke(channel, param) != null;
 		    }
 		}

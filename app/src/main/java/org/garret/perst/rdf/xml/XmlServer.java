@@ -256,7 +256,7 @@ public class XmlServer {
             char ch = str.charAt(0);
             if (ch == '+' || ch == '-' || (ch >= '0' && ch <= '9')) {
                 try { 
-                    return new Double(Double.parseDouble(str));
+                    return Double.valueOf(Double.parseDouble(str));
                 } catch (NumberFormatException x) {}
                 Date date = parseDate(str);
                 if (date != null) { 

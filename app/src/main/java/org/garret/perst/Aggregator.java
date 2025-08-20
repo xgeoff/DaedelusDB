@@ -285,7 +285,7 @@ public class Aggregator
         }
 
         public Object result() { 
-            return new Double(sum);
+            return Double.valueOf(sum);
         }
 
         public void merge(Aggregate<Number> other) { 
@@ -309,7 +309,7 @@ public class Aggregator
         }
 
         public Object result() { 
-            return new Long(sum);
+            return Long.valueOf(sum);
         }
 
         public void merge(Aggregate<Number> other) { 
@@ -335,7 +335,7 @@ public class Aggregator
         }
 
         public Object result() { 
-            return new Double(sum/count);
+            return Double.valueOf(sum/count);
         }
 
         public void merge(Aggregate<Number> other) { 
@@ -362,7 +362,7 @@ public class Aggregator
         }
 
         public Object result() { 
-            return new Double(prd);
+            return Double.valueOf(prd);
         }
 
         public void merge(Aggregate<Number> other) { 
@@ -392,7 +392,7 @@ public class Aggregator
         }
 
         public Object result() { 
-            return new Double((sum2 - sum*sum/count)/count);
+            return Double.valueOf((sum2 - sum*sum/count)/count);
         }
 
         public void merge(Aggregate<Number> other) { 
@@ -413,7 +413,7 @@ public class Aggregator
     public static class DevAggregate extends VarAggregate
     {
         public Object result() { 
-            return new Double(Math.sqrt((sum2 - sum*sum/count)/count));
+            return Double.valueOf(Math.sqrt((sum2 - sum*sum/count)/count));
         }
     }
     
@@ -431,7 +431,7 @@ public class Aggregator
         }
 
         public Object result() { 
-            return new Long(count);
+            return Long.valueOf(count);
         }
 
         public void merge(Aggregate other) { 
@@ -455,7 +455,7 @@ public class Aggregator
         }
 
         public Object result() { 
-            return new Long(set.size());
+            return Long.valueOf(set.size());
         }
 
         public void merge(Aggregate other) { 
@@ -496,7 +496,7 @@ public class Aggregator
         }
 
         public Object result() { 
-            return new Long(count);
+            return Long.valueOf(count);
         }
 
         public void merge(Aggregate other) { 
@@ -588,7 +588,7 @@ public class Aggregator
             {
                 E = -pow_2_32 * Math.log(1 - E / pow_2_32);
             }
-            return new Long((long)E);
+            return Long.valueOf((long)E);
         }
         
         public void merge(Aggregate other) { 

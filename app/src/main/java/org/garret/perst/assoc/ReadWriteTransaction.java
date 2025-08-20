@@ -1213,7 +1213,7 @@ public class ReadWriteTransaction extends ReadOnlyTransaction
         if (id == null) { 
             index = db.storage.<Item>createThickIndex(cls);
             db.root.attributes.put(name, index);
-            id = new Integer(index.getOid());
+            id = Integer.valueOf(index.getOid());
             db.name2id.put(name, id);
             db.id2name.put(id, name);
         } else { 

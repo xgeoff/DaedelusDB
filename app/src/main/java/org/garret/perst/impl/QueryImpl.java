@@ -468,9 +468,9 @@ class Node implements CodeGenerator.Code {
           case tpDate:            
             return evaluateDate(t);
           case tpInt:
-            return new Long(evaluateInt(t));
+            return Long.valueOf(evaluateInt(t));
           case tpReal:
-            return new Double(evaluateReal(t));
+            return Double.valueOf(evaluateReal(t));
           case tpBool:
             return evaluateBool(t) ? Boolean.TRUE : Boolean.FALSE;
           default:
@@ -521,7 +521,7 @@ class IntLiteralNode extends LiteralNode {
     }
 
     Object getValue() { 
-        return new Long(value);
+        return Long.valueOf(value);
     }
 
     long evaluateInt(FilterIterator t) {
@@ -543,7 +543,7 @@ class RealLiteralNode extends LiteralNode {
     }
 
     Object getValue() { 
-        return new Double(value);
+        return Double.valueOf(value);
     }
 
     double evaluateReal(FilterIterator t) {
@@ -858,10 +858,10 @@ class InvokeNode extends Node {
                 Object value;
                 switch (arg.type) { 
                   case Node.tpInt:
-                    value = new Long(arg.evaluateInt(t));
+                    value = Long.valueOf(arg.evaluateInt(t));
                     break;
                   case Node.tpReal:
-                    value = new Double(arg.evaluateReal(t));
+                    value = Double.valueOf(arg.evaluateReal(t));
                     break;
                   case Node.tpStr:
                     value = arg.evaluateStr(t);
@@ -870,7 +870,7 @@ class InvokeNode extends Node {
                     value = arg.evaluateDate(t);
                     break;
                   case Node.tpBool:
-                    value = new Boolean(arg.evaluateBool(t));
+                    value = Boolean.valueOf(arg.evaluateBool(t));
                     break;
                   default:
                     value = arg.evaluateObj(t);
@@ -1010,11 +1010,11 @@ class InvokeAnyNode extends Node {
                 Class type;
                 switch (arg.type) { 
                 case Node.tpInt:
-                    value = new Long(arg.evaluateInt(t));
+                    value = Long.valueOf(arg.evaluateInt(t));
                     type = long.class;
                     break;
                 case Node.tpReal:
-                    value = new Double(arg.evaluateReal(t)); 
+                    value = Double.valueOf(arg.evaluateReal(t)); 
                     type = double.class;
                     break;
                 case Node.tpStr:
@@ -1026,7 +1026,7 @@ class InvokeAnyNode extends Node {
                     type = Date.class;
                     break;
                 case Node.tpBool:
-                    value = new Boolean(arg.evaluateBool(t));
+                    value = Boolean.valueOf(arg.evaluateBool(t));
                     type = boolean.class;
                     break;
                 default:
@@ -1209,15 +1209,15 @@ class BinOpNode extends Node {
             double r2 = ((Number)rval).doubleValue();
             switch (tag) {
               case opAnyAdd:
-                return new Double(r1 + r2);
+                return Double.valueOf(r1 + r2);
               case opAnySub:
-                return new Double(r1 - r2);
+                return Double.valueOf(r1 - r2);
               case opAnyMul:
-                return new Double(r1 * r2);
+                return Double.valueOf(r1 * r2);
               case opAnyDiv:
-                return new Double(r1 / r2);
+                return Double.valueOf(r1 / r2);
               case opAnyPow:
-                return new Double(Math.pow(r1, r2));
+                return Double.valueOf(Math.pow(r1, r2));
               default:
                 throw new Error("Operation is not applicable to operands of real type");
             }
@@ -1229,20 +1229,20 @@ class BinOpNode extends Node {
             long res;
             switch (tag) { 
               case opAnyAdd:
-                return new Long(i1 + i2);
+                return Long.valueOf(i1 + i2);
               case opAnySub:
-                return new Long(i1 - i2);
+                return Long.valueOf(i1 - i2);
               case opAnyMul:
-                return new Long(i1 * i2);
+                return Long.valueOf(i1 * i2);
               case opAnyDiv:
                 if (i2 == 0) { 
                     throw new JSQLArithmeticException("Divided by zero");
                 }
-                return new Long(i1 / i2);
+                return Long.valueOf(i1 / i2);
               case opAnyAnd:
-                return new Long(i1 & i2);
+                return Long.valueOf(i1 & i2);
               case opAnyOr:
-                return new Long(i1 | i2);
+                return Long.valueOf(i1 | i2);
               case opAnyPow:
                 res = 1;
                 if (i1 < 0) {
@@ -1256,7 +1256,7 @@ class BinOpNode extends Node {
                     i2 *= i2;
                     i1 >>>= 1;
                 }
-                return new Long(res);             
+                return Long.valueOf(res);             
               default:
                 throw new Error("Operation is not applicable to operands of integer type");
             }
@@ -1688,20 +1688,20 @@ class UnaryOpNode extends Node {
         switch (tag) {
           case opAnyNeg:
             return val instanceof Double || val instanceof Float 
-                ? (Object)new Double(-((Number)val).doubleValue())
-                : (Object)new Long(-((Number)val).longValue());
+                ? (Object)Double.valueOf(-((Number)val).doubleValue())
+                : (Object)Long.valueOf(-((Number)val).longValue());
           case opAnyAbs:
             if (val instanceof Double || val instanceof Float) { 
                 double rval = ((Number)val).doubleValue();
-                return new Double(rval < 0 ? -rval : rval);
+                return Double.valueOf(rval < 0 ? -rval : rval);
             } else { 
                 long ival = ((Number)val).longValue();
-                return new Long(ival < 0 ? -ival : ival);
+                return Long.valueOf(ival < 0 ? -ival : ival);
             }
           case opAnyNot:
             return val instanceof Boolean 
                 ? ((Boolean)val).booleanValue() ? Boolean.FALSE : Boolean.TRUE
-                : (Object)new Long(~((Number)val).longValue());
+                : (Object)Long.valueOf(~((Number)val).longValue());
           default:
             throw new Error("Invalid tag " + tag);
         } 
@@ -2750,17 +2750,17 @@ public class QueryImpl<T> implements Query<T>
 
     public void setIntParameter(int index, long value)
     {
-        setParameter(index, new Long(value));
+        setParameter(index, Long.valueOf(value));
     }
 
     public void setRealParameter(int index, double value)
     {
-        setParameter(index, new Double(value));
+        setParameter(index, Double.valueOf(value));
     }
 
     public void setBoolParameter(int index, boolean value)
     {
-        setParameter(index, new Boolean(value));
+        setParameter(index, Boolean.valueOf(value));
     }
 
     public void prepare(Class cls, String query)

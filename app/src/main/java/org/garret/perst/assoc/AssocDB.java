@@ -88,7 +88,7 @@ public class AssocDB
         } else {
             root.db = this;
             for (Map.Entry<Object,Index<Item>> e : root.attributes.entryIterator()) { 
-                Integer id = new Integer(e.getValue().getOid());
+                Integer id = Integer.valueOf(e.getValue().getOid());
                 String name = ((String)e.getKey()).intern();
                 name2id.put(name, id);
                 id2name.put(id, name);

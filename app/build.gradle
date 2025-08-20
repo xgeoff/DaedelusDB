@@ -35,8 +35,7 @@ dependencies {
 // Apply a specific Java toolchain to ease working on different environments.
 java {
     toolchain {
-        // Compile sources using an older JDK to avoid removal warnings
-        languageVersion = JavaLanguageVersion.of(8)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
 
@@ -53,11 +52,7 @@ sourceSets {
     }
 }
 
-// Suppress compiler warnings to keep the build output clean
-tasks.withType(JavaCompile).configureEach {
-    options.warnings = false
-    options.compilerArgs += ['-Xlint:-deprecation', '-Xlint:-unchecked']
-}
+
 
 application {
     // Define the main class for the application.
