@@ -11,7 +11,8 @@
 package org.garret.perst;
 
 import static org.garret.perst.Storage.INFINITE_PAGE_POOL;
-import junit.framework.*;
+import org.junit.*;
+import static org.junit.Assert.*;
 
 /**
  * These tests verifies an implementation of the <code>Storage</code> interface. <br />
@@ -31,27 +32,17 @@ import junit.framework.*;
  *   }
  * </pre>
  */
-public class StorageTestThreaded extends TestCase {
+public class StorageTestThreaded {
 
     Storage storage;
 
-    public StorageTestThreaded(String testName) {
-        super(testName);
-    }
-    
-    public static junit.framework.Test suite()
-    {
-        junit.framework.TestSuite suite =
-                new junit.framework.TestSuite(StorageTestThreaded.class);
-        
-        return suite;
-    }
-
-    protected void setUp() throws java.lang.Exception {
+    @Before
+    public void setUp() throws Exception {
         storage = StorageFactory.getInstance().createStorage();
     }
 
-    protected void tearDown() throws java.lang.Exception {
+    @After
+    public void tearDown() throws Exception {
         if (storage.isOpened())
             storage.close();
     }
@@ -71,6 +62,7 @@ public class StorageTestThreaded extends TestCase {
      * <li>Storage provided correct synchronisation.</li>
      * </ul>
      */
+    @Test
     public void testThreadExclusive() {
         storage.open(new NullFile(), INFINITE_PAGE_POOL);
         storage.setRoot(new Root());
@@ -104,6 +96,7 @@ public class StorageTestThreaded extends TestCase {
      * <li>Storage provided correct synchronisation.</li>
      * </ul>
      */
+    @Test
     public void testThreadSerializable() {
         storage.open(new NullFile(), INFINITE_PAGE_POOL);
         storage.setRoot(new Root());
@@ -140,7 +133,7 @@ public class StorageTestThreaded extends TestCase {
     }
 
     private static class TestThread extends Thread{
-        static Integer lock = new Integer(5);
+        static Integer lock = Integer.valueOf(5);
         static int max_id = 0;
         static int cnt = 0;
         Storage storage;

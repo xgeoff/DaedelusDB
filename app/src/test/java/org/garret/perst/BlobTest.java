@@ -10,7 +10,8 @@
 
 package org.garret.perst;
 
-import junit.framework.*;
+import org.junit.*;
+import static org.junit.Assert.*;
 
 import java.io.OutputStream;
 import java.io.InputStream;
@@ -20,27 +21,17 @@ import java.io.File;
  * This test class verifies the <CODE>Blob</CODE> type supporting by the Perst
  * storage.
  */
-public class BlobTest extends TestCase {
+public class BlobTest {
 
     Storage storage;
     Blob blob;
 
-    public BlobTest(String testName) {
-        super(testName);
-    }
-    public static junit.framework.Test suite()
-    {
-        junit.framework.TestSuite suite =
-                new junit.framework.TestSuite(BlobTest.class);
-
-        return suite;
+    @Before
+    public void setUp() throws Exception {
     }
 
-
-    protected void setUp() throws java.lang.Exception {
-    }
-
-    protected void tearDown() throws java.lang.Exception {
+    @After
+    public void tearDown() throws Exception {
         if (storage.isOpened()){
             storage.close();
         }
@@ -64,6 +55,7 @@ public class BlobTest extends TestCase {
      * <li>Stored and retrieved blob content are the same.</li>
      * </ul>
      */
+    @Test
     public void test00() throws Exception{
         storage = StorageFactory.getInstance().createStorage();
         storage.open("BlobTest.dbs");
@@ -102,6 +94,7 @@ public class BlobTest extends TestCase {
      * <li>Stored and retrieved blob content are the same.</li>
      * </ul>
      */
+    @Test
     public void test01() throws Exception {
         storage = StorageFactory.getInstance().createStorage();
         storage.open("BlobTest.dbs");
