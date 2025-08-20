@@ -10,7 +10,8 @@
 
 package org.garret.perst;
 
-import junit.framework.TestCase;
+import org.junit.*;
+import static org.junit.Assert.*;
 
 import java.util.Iterator;
 
@@ -32,29 +33,19 @@ import java.util.Iterator;
  *   }
  * </pre>
  */
-public class PersistentSetTest extends TestCase{
+public class PersistentSetTest {
     Storage storage;
     IPersistentSet persistentSet;
 
-    public PersistentSetTest(String testName) {
-        super(testName);
-    }
-
-    public static junit.framework.Test suite()
-    {
-        junit.framework.TestSuite suite =
-                new junit.framework.TestSuite(PersistentSetTest.class);
-
-        return suite;
-    }
-
-    protected void setUp() throws java.lang.Exception {
+    @Before
+    public void setUp() throws Exception {
         storage = StorageFactory.getInstance().createStorage();
         storage.open(new NullFile(), Storage.INFINITE_PAGE_POOL);
         persistentSet = storage.createSet();
     }
 
-    protected void tearDown() throws java.lang.Exception {
+    @After
+    public void tearDown() throws Exception {
         if (storage.isOpened())
             storage.close();
     }
@@ -72,13 +63,10 @@ public class PersistentSetTest extends TestCase{
      * <li>no exceptions are thrown.</li>
      * </ul>
      */
+    @Test
     public void test00() {
-        try{
-            persistentSet.add(null);
-            fail("NullPointerExceptions expected");
-        }catch(NullPointerException e){
-            // expected exception
-        }
+        assertTrue(persistentSet.add(null));
+        assertTrue(persistentSet.contains(null));
     }
 
     /**
@@ -94,6 +82,7 @@ public class PersistentSetTest extends TestCase{
      * <li>no exceptions are thrown.</li>
      * </ul>
      */
+    @Test
     public void test01(){
         persistentSet.add(new Stored());
     }
@@ -112,6 +101,7 @@ public class PersistentSetTest extends TestCase{
      * <li>no exceptions are thrown.</li>
      * </ul>
      */
+    @Test
     public void test02() {
         Stored o = new Stored();
         persistentSet.add(o);
@@ -132,6 +122,7 @@ public class PersistentSetTest extends TestCase{
      * <li><code>iterator()</code> returns added object.</li>
      * </ul>
      */
+    @Test
     public void test03() {
         Stored o = new Stored();
         persistentSet.add(o);
@@ -153,6 +144,7 @@ public class PersistentSetTest extends TestCase{
      * <li><code>iterator()</code> returns empty set.</li>
      * </ul>
      */
+    @Test
     public void test04() {
         Iterator i = persistentSet.iterator();
         assertFalse(i.hasNext());
@@ -173,6 +165,7 @@ public class PersistentSetTest extends TestCase{
      * <li><code>iterator()</code> returns empty set.</li>
      * </ul>
      */
+    @Test
     public void test05() {
         Stored o = new Stored();
         persistentSet.add(o);
@@ -196,6 +189,7 @@ public class PersistentSetTest extends TestCase{
      *  the second invocation returned <i>false</i>.</li>
      * </ul>
      */
+    @Test
     public void test06() {
         Stored o = new Stored();
         assertTrue(persistentSet.add(o));
@@ -221,6 +215,7 @@ public class PersistentSetTest extends TestCase{
      * the second invocation returned <i>false</i>.</li>
      * </ul>
      */
+    @Test
     public void test07() {
         Stored o = new Stored();
         persistentSet.add(o);
@@ -242,6 +237,7 @@ public class PersistentSetTest extends TestCase{
      * <li><code>getRecords(...)</code> returned all five added objects.</li>
      * </ul>
      */
+    @Test
     public void test08() {
         Stored[] arr = {new Stored(), new Stored(), new Stored(), new Stored(), new Stored()};
         for(Stored s: arr){
@@ -278,6 +274,7 @@ public class PersistentSetTest extends TestCase{
      * <li><code>getsRecords(...)</code> returned all five added objects.</li>
      * </ul>
      */
+    @Test
     public void test09() {
         Stored[] arr = {new StoredEx(), new Stored(), new StoredEx(), new Stored(), new StoredEx()};
         for (Stored s : arr) {

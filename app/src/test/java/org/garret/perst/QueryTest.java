@@ -10,7 +10,8 @@
 
 package org.garret.perst;
 
-import junit.framework.TestCase;
+import org.junit.*;
+import static org.junit.Assert.*;
 
 import java.util.Iterator;
 import java.util.Vector;
@@ -36,29 +37,19 @@ import java.util.Vector;
  *   }
  * </pre>
  */
-public class QueryTest extends TestCase {
+public class QueryTest {
     Storage storage;
     Query query;
 
-    public QueryTest(String testName) {
-        super(testName);
-    }
-
-    public static junit.framework.Test suite()
-    {
-        junit.framework.TestSuite suite =
-                new junit.framework.TestSuite(QueryTest.class);
-
-        return suite;
-    }
-
-    protected void setUp() throws java.lang.Exception {
+    @Before
+    public void setUp() throws Exception {
         storage = StorageFactory.getInstance().createStorage();
         storage.open(new NullFile(), Storage.INFINITE_PAGE_POOL);
         query = storage.createQuery();
     }
 
-    protected void tearDown() throws java.lang.Exception {
+    @After
+    public void tearDown() throws Exception {
         if (storage.isOpened())
             storage.close();
     }
@@ -95,6 +86,7 @@ public class QueryTest extends TestCase {
      * <P>
      * <B>Result:</B> <code>NullPointerException</code> was thrown.
      */
+    @Test
     public void test00() {
         try{
             query.select((Class)null, (Iterator)null, (String)null);
@@ -116,6 +108,7 @@ public class QueryTest extends TestCase {
      * <P>
      * <B>Result:</B> no  exceptions are thrown.
      */
+    @Test
     public void test01() {
         Vector v = new Vector();
         Iterator i = query.select(Stored.class, v.iterator(), "i=6");
@@ -138,6 +131,7 @@ public class QueryTest extends TestCase {
      * <li>no  exceptions are thrown.</li>
      * </ul>
      */
+    @Test
     public void test02(){
         Vector v = new Vector();
         v.add(new Stored(5,"t"));
@@ -162,6 +156,7 @@ public class QueryTest extends TestCase {
      * <li>no  exceptions are thrown.</li>
      * </ul>
      */
+    @Test
     public void test03() {
         Vector v = new Vector();
         Stored tc = new Stored(5, "t");
@@ -187,6 +182,7 @@ public class QueryTest extends TestCase {
      * <li><code>CompileError</code> are thrown.</li>
      * </ul>
      */
+    @Test
     public void test04() {
         try{
             Vector v = new Vector();
@@ -215,6 +211,7 @@ public class QueryTest extends TestCase {
      * <li><code>select(...)</code> returned expected object.</li>
      * </ul>
      */
+    @Test
     public void test05() {
         Vector v = new Vector();
         Stored tc = new Stored(5, "t");
@@ -240,6 +237,7 @@ public class QueryTest extends TestCase {
      * <li><code>select(...)</code> returned expected object.</li>
      * </ul>
      */
+    @Test
     public void test06() {
         Vector v = new Vector();
         Stored tc = new Stored(5, "t");
@@ -264,6 +262,7 @@ public class QueryTest extends TestCase {
      * <li><code>select(...)</code> returned expected object.</li>
      * </ul>
      */
+    @Test
     public void test07() {
         Vector v = new Vector();
         Stored tc = new Stored(5, "t");
@@ -288,6 +287,7 @@ public class QueryTest extends TestCase {
      * <li><code>select(...)</code> returned two expected objects.</li>
      * </ul>
      */
+    @Test
     public void test08() {
         Vector v = new Vector();
         Stored tc = new Stored(5, "t");
@@ -326,6 +326,7 @@ public class QueryTest extends TestCase {
      * <li><code>select(...)</code> returned two expected objects.</li>
      * </ul>
      */
+    @Test
     public void test09() {
         Vector v = new Vector();
         Stored tc = new Stored(5, "t");
@@ -363,6 +364,7 @@ public class QueryTest extends TestCase {
      * <li><code>select(...)</code> returned two expected objects.</li>
      * </ul>
      */
+    @Test
     public void test10() {
         Vector v = new Vector();
         Stored tc = new Stored(5, "t");
@@ -400,6 +402,7 @@ public class QueryTest extends TestCase {
      * <li><code>select(...)</code> returned two expected objects.</li>
      * </ul>
      */
+    @Test
     public void test11() {
         Vector v = new Vector();
         Stored tc = new Stored(5, "t");
@@ -437,6 +440,7 @@ public class QueryTest extends TestCase {
      * <li><code>select(...)</code> returned expected object.</li>
      * </ul>
      */
+    @Test
     public void test12() {
         Vector v = new Vector();
         Stored tc = new Stored(5, "t");
@@ -461,6 +465,7 @@ public class QueryTest extends TestCase {
      * <li><code>select(...)</code> returned expected object.</li>
      * </ul>
      */
+    @Test
     public void test13() {
         Vector v = new Vector();
         Stored tc = new Stored(5, "123t456");
@@ -485,6 +490,7 @@ public class QueryTest extends TestCase {
      * <li><code>select(...)</code> returned expected object.</li>
      * </ul>
      */
+    @Test
     public void test14() {
         Vector v = new Vector();
         Stored tc = new Stored(5, "123t456");
@@ -509,6 +515,7 @@ public class QueryTest extends TestCase {
      * <li><code>select(...)</code> returned two expected objects.</li>
      * </ul>
      */
+    @Test
     public void test15() {
         Vector v = new Vector();
         Stored[] tcs = {new Stored(5, ""), new Stored(10, "")};
@@ -534,6 +541,7 @@ public class QueryTest extends TestCase {
      * <li><code>select(...)</code> returned two expected objects.</li>
      * </ul>
      */
+    @Test
     public void test16() {
         Vector v = new Vector();
         Stored[] tcs = {new Stored(5, ""), new Stored(10, "")};

@@ -10,35 +10,19 @@
 
 package org.garret.perst;
 
-import junit.framework.*;
+import org.junit.*;
+import static org.junit.Assert.*;
 
 /**
  * These tests verifies an functionality of the <code>StorageFactory</code> class.
  */
-public class StorageFactoryTest extends TestCase {
-
-    public StorageFactoryTest(String testName) {
-        super(testName);
-    }
-
-    public static junit.framework.Test suite()
-    {
-        junit.framework.TestSuite suite =
-                new junit.framework.TestSuite(StorageFactoryTest.class);
-
-        return suite;
-    }
-
-    protected void setUp() throws java.lang.Exception {
-    }
-
-    protected void tearDown() throws java.lang.Exception {
-    }
+public class StorageFactoryTest {
 
     /**
      * Verifies that a <CODE>createStorage()</CODE> method invocation returns a
      * not-<CODE>null</CODE> object.
      */
+    @Test
     public void testCreateStorage() {
         Storage storage = StorageFactory.getInstance().createStorage();
         assertNotNull(storage);
@@ -48,6 +32,7 @@ public class StorageFactoryTest extends TestCase {
      * Verifies that a <CODE>createStorage()</CODE> method invocation returns different values
      * in sequential  calls.
      */
+    @Test
     public void testCreateTwice() {
         Storage storage0 = StorageFactory.getInstance().createStorage();
         Storage storage1 = StorageFactory.getInstance().createStorage();
