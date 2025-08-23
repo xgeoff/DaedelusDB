@@ -17,7 +17,7 @@ public class SingleWriterModeTest {
 
     @Test
     public void singleWriterIncrements() throws Exception {
-        File dbFile = File.createTempFile("single_writer", ".dbs");
+        File dbFile = new File(getClass().getClassLoader().getResource("single_writer.dbs").toURI());
         dbFile.delete();
         Storage storage = StorageFactory.getInstance().createStorage();
         storage.open(dbFile.getPath());
