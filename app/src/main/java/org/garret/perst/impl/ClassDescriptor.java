@@ -29,7 +29,7 @@ public final class ClassDescriptor extends Persistent {
         }
     }    
 
-    transient Class       cls;
+    transient Class<?>    cls;
     transient Constructor loadConstructor;
     transient LoadFactory factory;
     transient Object[]    constructorParams;
@@ -241,8 +241,8 @@ public final class ClassDescriptor extends Persistent {
 
     public static boolean isEmbedded(Object obj)
     {
-        if (obj != null) { 
-            Class cls = obj.getClass();
+        if (obj != null) {
+            Class<?> cls = obj.getClass();
             return obj instanceof IValue || obj instanceof Number || cls.isArray() || cls == Character.class || cls == Boolean.class || cls == Date.class || cls == String.class;
         }
         return false;

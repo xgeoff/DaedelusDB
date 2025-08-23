@@ -1207,7 +1207,7 @@ public class StorageImpl implements Storage {
     }
 
     static void checkIfFinal(ClassDescriptor desc) {
-        Class cls = desc.cls;
+        Class<?> cls = desc.cls;
         if (cls != null) {
             for (ClassDescriptor next = desc.next; next != null; next = next.next) {
                 next.load();
