@@ -1944,15 +1944,15 @@ public class StorageImpl implements Storage {
         }
         FieldIndex<T> index = thick
             ? caseInsensitive
-                ? (FieldIndex<T>)new ThickCaseInsensitiveFieldIndex<T>(this, type, fieldName)
-                : (FieldIndex<T>)new ThickFieldIndex<T>(this, type, fieldName)
+                ? new ThickCaseInsensitiveFieldIndex<T>(this, type, fieldName)
+                : new ThickFieldIndex<T>(this, type, fieldName)
             : caseInsensitive
                 ? alternativeBtree
-                    ? (FieldIndex<T>)new AltBtreeCaseInsensitiveFieldIndex<T>(type, fieldName, unique)
-                    : (FieldIndex<T>)new BtreeCaseInsensitiveFieldIndex<T>(type, fieldName, unique)
+                    ? new AltBtreeCaseInsensitiveFieldIndex<T>(type, fieldName, unique)
+                    : new BtreeCaseInsensitiveFieldIndex<T>(type, fieldName, unique)
                 : alternativeBtree
-                    ? (FieldIndex<T>)new AltBtreeFieldIndex<T>(type, fieldName, unique)
-                    : (FieldIndex<T>)new BtreeFieldIndex<T>(type, fieldName, unique);
+                    ? new AltBtreeFieldIndex<T>(type, fieldName, unique)
+                    : new BtreeFieldIndex<T>(type, fieldName, unique);
         index.assignOid(this, 0, false);
         return index;
     }
@@ -1967,11 +1967,11 @@ public class StorageImpl implements Storage {
         }
         FieldIndex<T> index = caseInsensitive
             ? alternativeBtree
-                ? (FieldIndex<T>)new AltBtreeCaseInsensitiveMultiFieldIndex<T>(type, fieldNames, unique)
-                : (FieldIndex<T>)new BtreeCaseInsensitiveMultiFieldIndex<T>(type, fieldNames, unique)
+                ? new AltBtreeCaseInsensitiveMultiFieldIndex<T>(type, fieldNames, unique)
+                : new BtreeCaseInsensitiveMultiFieldIndex<T>(type, fieldNames, unique)
             : alternativeBtree
-                ? (FieldIndex<T>)new AltBtreeMultiFieldIndex<T>(type, fieldNames, unique)
-                : (FieldIndex<T>)new BtreeMultiFieldIndex<T>(type, fieldNames, unique);
+                ? new AltBtreeMultiFieldIndex<T>(type, fieldNames, unique)
+                : new BtreeMultiFieldIndex<T>(type, fieldNames, unique);
         index.assignOid(this, 0, false);
         return index;
     }
@@ -2004,8 +2004,8 @@ public class StorageImpl implements Storage {
             throw new StorageError(StorageError.STORAGE_NOT_OPENED);
         }
         FieldIndex<T> index = caseInsensitive
-            ? (FieldIndex<T>)new RndBtreeCaseInsensitiveFieldIndex<T>(type, fieldName, unique)
-            : (FieldIndex<T>)new RndBtreeFieldIndex<T>(type, fieldName, unique);
+            ? new RndBtreeCaseInsensitiveFieldIndex<T>(type, fieldName, unique)
+            : new RndBtreeFieldIndex<T>(type, fieldName, unique);
         index.assignOid(this, 0, false);
         return index;
     }
@@ -2019,8 +2019,8 @@ public class StorageImpl implements Storage {
             throw new StorageError(StorageError.STORAGE_NOT_OPENED);
         }
         FieldIndex<T> index = caseInsensitive
-            ? (FieldIndex<T>)new RndBtreeCaseInsensitiveMultiFieldIndex<T>(type, fieldNames, unique)
-            : (FieldIndex<T>)new RndBtreeMultiFieldIndex<T>(type, fieldNames, unique);
+            ? new RndBtreeCaseInsensitiveMultiFieldIndex<T>(type, fieldNames, unique)
+            : new RndBtreeMultiFieldIndex<T>(type, fieldNames, unique);
         index.assignOid(this, 0, false);
         return index;
     }
