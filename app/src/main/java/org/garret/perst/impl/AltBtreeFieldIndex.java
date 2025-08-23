@@ -126,7 +126,7 @@ class AltBtreeFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
     public boolean addAll(Collection<? extends T> c) {
         FieldValue[] arr = new FieldValue[c.size()];
         Iterator<? extends T> e = c.iterator();
-        try { 
+        try {
             for (int i = 0; e.hasNext(); i++) {
                 T obj = e.next();
                 arr[i] = new FieldValue(obj, fld.get(obj));
@@ -205,19 +205,19 @@ class AltBtreeFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
         super.insert(key, obj, false);
     }
 
-    public T[] getPrefix(String prefix) { 
+    public T[] getPrefix(String prefix) {
         ArrayList<T> list = getList(new Key(prefix, true), new Key(prefix + Character.MAX_VALUE, false));
-        return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));        
+        return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));
     }
 
-    public T[] prefixSearch(String key) { 
+    public T[] prefixSearch(String key) {
         ArrayList<T> list = prefixSearchList(key);
         return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));
     }
 
     public T[] get(Key from, Key till) {
-        ArrayList<T> list = new ArrayList();
-        if (root != null) { 
+        ArrayList<T> list = new ArrayList<>();
+        if (root != null) {
             root.find(checkKey(from), checkKey(till), height, list);
         }
         return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));
@@ -225,7 +225,7 @@ class AltBtreeFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
 
     public T[] toArray() {
         T[] arr = (T[])Array.newInstance(cls, nElems);
-        if (root != null) { 
+        if (root != null) {
             root.traverseForward(height, arr, 0);
         }
         return arr;
