@@ -10,7 +10,7 @@ import org.garret.perst.*;
  * it is necessary to store reference to it's CVersionHistory. 
  * Version is version history are assigned sequential numbers (version identifiers) starting from 1. 
  */
-public class CVersionHistory<V extends CVersion> extends Persistent implements Iterable<V>
+public class CVersionHistory extends Persistent implements Iterable<CVersion>
 {
     public CVersionHistory() {}
     /**
@@ -18,14 +18,14 @@ public class CVersionHistory<V extends CVersion> extends Persistent implements I
      * @return current version for the current transaction or null if none 
      * (version history was create after transaction has been started)
      */
-    public synchronized V getCurrent() 
+    public synchronized CVersion getCurrent()
     {
         TransactionContext ctx = CDatabase.getTransactionContext(); 
         if (ctx == null) { 
             return versions.get(versions.size()-1);
         }
         CVersion wc = ctx.getWorkingCopy(this);
-        return (wc != null) ? (V)wc : getCurrent(ctx.transId);
+        return (wc != null) ? wc : getCurrent(ctx.transId);
     }
 
     /**
@@ -34,10 +34,10 @@ public class CVersionHistory<V extends CVersion> extends Persistent implements I
      * @return current version for the specified transaction or null if none 
      * (version history was create after transaction has been started)
      */
-    public synchronized V getCurrent(long transId) 
+    public synchronized CVersion getCurrent(long transId)
     { 
         for (int i = versions.size(); --i >= 0;) { 
-            V v = versions.get(i);
+            CVersion v = versions.get(i);
             if (v.transId <= transId) { 
                 return v;
             }
@@ -49,7 +49,7 @@ public class CVersionHistory<V extends CVersion> extends Persistent implements I
      * Get last version in the version history
      * @return latest version in the version history
      */
-    public synchronized V getLast() {
+    public synchronized CVersion getLast() {
         return versions.get(versions.size()-1);
     }
 
@@ -57,9 +57,9 @@ public class CVersionHistory<V extends CVersion> extends Persistent implements I
      * Get working copy for this version history
      * @return existed working copy of some version in this version history or newly create working copy of the current version
      */
-    public synchronized V update() 
-    { 
-        return (V)CDatabase.getWriteTransactionContext().update(this);
+    public synchronized CVersion update()
+    {
+        return CDatabase.getWriteTransactionContext().update(this);
     }
 
     /**
@@ -81,7 +81,7 @@ public class CVersionHistory<V extends CVersion> extends Persistent implements I
      * @param id version identifier (starting from 1)
      * @return version with this ID
      */
-    public synchronized V get(int id) { 
+    public synchronized CVersion get(int id) {
         return versions.get(id-1);
     }
 
@@ -99,7 +99,7 @@ public class CVersionHistory<V extends CVersion> extends Persistent implements I
      * @param timestamp deadline, if <code>null</code> then the latest version in the version history will be returned
      * @return version with the largest timestamp less than or equal to specified <code>timestamp</code>
      */
-    public synchronized V getLatestBefore(Date timestamp) 
+    public synchronized CVersion getLatestBefore(Date timestamp)
     { 
         if (timestamp == null) { 
             return versions.get(versions.size()-1);
@@ -122,7 +122,7 @@ public class CVersionHistory<V extends CVersion> extends Persistent implements I
      * @param timestamp deadline, if <code>null</code> then root version will be returned
      * @return version with the smallest timestamp greater than or equal to specified <code>timestamp</code>
      */
-    public synchronized V getEarliestAfter(Date timestamp)
+    public synchronized CVersion getEarliestAfter(Date timestamp)
     {
         if (timestamp == null) { 
             return versions.get(0);
@@ -164,28 +164,28 @@ public class CVersionHistory<V extends CVersion> extends Persistent implements I
      * version timestamp
      * @return version iterator
      */
-    public synchronized Iterator<V> iterator() 
-    { 
+    public synchronized Iterator<CVersion> iterator()
+    {
         return versions.iterator();
     }
 
-    synchronized void add(V v) 
-    { 
+    synchronized void add(CVersion v)
+    {
         versions.add(v);
         store();
     }
 
-    synchronized boolean isCurrentForTransaction(CVersion v, long transId) 
-    { 
+    synchronized boolean isCurrentForTransaction(CVersion v, long transId)
+    {
         return v.transId <= transId && (v.id == versions.size() || versions.get(v.id).transId > transId);
     }
-        
-    CVersionHistory(Storage storage, boolean limited) 
-    { 
-        versions = storage.<V>createLink(1);
+
+    CVersionHistory(Storage storage, boolean limited)
+    {
+        versions = storage.<CVersion>createLink(1);
         this.limited = limited;
     }
 
-    Link<V> versions;
+    Link<CVersion> versions;
     boolean limited;
 }

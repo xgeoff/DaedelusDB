@@ -395,7 +395,7 @@ class TableDescriptor extends Persistent implements Iterable<CVersionHistory>
         TableDescriptor td = this;
         do {             
             for (IndexDescriptor id : td.indices) {
-                q.addIndex(id.fieldName, new IndexFilter(id, resource, selector));
+                q.addIndex(id.fieldName, new IndexFilter(type, id, resource, selector));
             }
         } while ((td = td.supertable) != null);
     }

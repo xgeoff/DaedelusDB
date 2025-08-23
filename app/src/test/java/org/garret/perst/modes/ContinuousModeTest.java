@@ -39,7 +39,7 @@ public class ContinuousModeTest {
                     boolean committed = false;
                     while (!committed) {
                         db.beginTransaction();
-                        Counter c = db.getSingleton(db.<Counter>find(Counter.class, "id", new Key(1))).update();
+                        Counter c = (Counter) db.getSingleton(db.<Counter>find(Counter.class, "id", new Key(1))).update();
                         c.value++;
                         try {
                             db.commitTransaction();

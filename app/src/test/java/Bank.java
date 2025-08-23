@@ -12,9 +12,9 @@ class Account extends CVersion
 }
 
 class Transfer extends CVersion
-{  
-    CVersionHistory<Account> src;
-    CVersionHistory<Account> dst;
+{
+    CVersionHistory src;
+    CVersionHistory dst;
     long amount;
 
     Transfer(Account src, Account dst, long amount) 
@@ -70,8 +70,8 @@ public class Bank implements Runnable
             
             db.beginTransaction();
 
-            Account src = db.getSingleton(db.<Account>find(Account.class, "id", new Key(srcId))).update();
-            Account dst = db.getSingleton(db.<Account>find(Account.class, "id", new Key(dstId))).update();
+            Account src = (Account) db.getSingleton(db.<Account>find(Account.class, "id", new Key(srcId))).update();
+            Account dst = (Account) db.getSingleton(db.<Account>find(Account.class, "id", new Key(dstId))).update();
             if (amount > src.balance) { 
                 amount = src.balance;
             }
