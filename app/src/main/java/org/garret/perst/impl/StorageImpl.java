@@ -147,7 +147,7 @@ public class StorageImpl implements Storage {
             if (useSerializableTransactions) {
                 ThreadTransactionContext ctx = getTransactionContext();
                 if (ctx.nested != 0) { // serializable transaction
-                    ctx.deleted.add(obj);
+                    ctx.deleted.add((IPersistent)obj);
                     return;
                 }
             }
@@ -2783,9 +2783,9 @@ public class StorageImpl implements Storage {
         ThreadTransactionContext ctx = getTransactionContext();
         if (ctx.nested != 0) { // serializable transaction
             if (--ctx.nested == 0) {
-                ArrayList modified = ctx.modified;
-                ArrayList deleted = ctx.deleted;
-                Map locked = ctx.locked;
+                ArrayList<IPersistent> modified = ctx.modified;
+                ArrayList<IPersistent> deleted = ctx.deleted;
+                Map<IResource,IResource> locked = ctx.locked;
                 synchronized (backgroundGcMonitor) {
                     synchronized(this) {
                         synchronized (objectCache) {
@@ -2801,9 +2801,8 @@ public class StorageImpl implements Storage {
                         }
                     }
                 }
-                Iterator iterator = locked.values().iterator();
-                while (iterator.hasNext()) {
-                    ((IResource)iterator.next()).reset();
+                for (IResource resource : locked.values()) {
+                    resource.reset();
                 }
                 modified.clear();
                 deleted.clear();
@@ -2862,13 +2861,13 @@ public class StorageImpl implements Storage {
         }
         ThreadTransactionContext ctx = getTransactionContext();
         if (ctx.nested != 0) { // serializable transaction
-            ArrayList modified = ctx.modified;
-            Map locked = ctx.locked;
+            ArrayList<IPersistent> modified = ctx.modified;
+            Map<IResource,IResource> locked = ctx.locked;
             synchronized (this) {
                 synchronized (objectCache) {
                     int i = modified.size();
                     while (--i >= 0) {
-                        Object obj = modified.get(i);
+                        IPersistent obj = modified.get(i);
                         int oid = getOid(obj);
                         Assert.that(oid != 0);
                         invalidate(obj);
@@ -2882,9 +2881,8 @@ public class StorageImpl implements Storage {
                     }
                 }
             }
-            Iterator iterator = locked.values().iterator();
-            while (iterator.hasNext()) {
-                ((IResource)iterator.next()).reset();
+            for (IResource resource : locked.values()) {
+                resource.reset();
             }
             ctx.nested = 0;
             modified.clear();
@@ -2905,7 +2903,7 @@ public class StorageImpl implements Storage {
         }
     }
 
-    public/*protected*/  boolean lockObject(Object obj) {
+    public/*protected*/  boolean lockObject(IResource obj) {
         if (useSerializableTransactions) {
             ThreadTransactionContext ctx = getTransactionContext();
             if (ctx.nested != 0) { // serializable transaction
@@ -3199,7 +3197,7 @@ public class StorageImpl implements Storage {
                     if (useSerializableTransactions) {
                         ThreadTransactionContext ctx = getTransactionContext();
                         if (ctx.nested != 0) { // serializable transaction
-                            ctx.modified.add(obj);
+                            ctx.modified.add((IPersistent)obj);
                             return;
                         }
                     }
@@ -5246,7 +5244,7 @@ public class StorageImpl implements Storage {
             if (useSerializableTransactions) {
                 ThreadTransactionContext ctx = getTransactionContext();
                 if (ctx.nested != 0) { // serializable transaction
-                    ctx.modified.add(obj);
+                    ctx.modified.add((IPersistent)obj);
                     return;
                 }
             }
