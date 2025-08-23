@@ -5,6 +5,7 @@ import org.garret.perst.fulltext.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.io.*;
+import java.util.concurrent.*;
 
 public class StorageImpl implements Storage {
     /**
@@ -1004,6 +1005,10 @@ public class StorageImpl implements Storage {
         header = new Header();
         pool = new PagePool((int)(pagePoolSize/Page.pageSize), pagePoolLruLimit);
         pool.open(file);
+
+        writerThread = Thread.currentThread();
+        writerQueue = new LinkedBlockingQueue<Runnable>();
+        writerThreadRunning = false;
     }
 
     public synchronized void open(IFile file, long pagePoolSize) {
@@ -1169,6 +1174,32 @@ public class StorageImpl implements Storage {
         } else {
             commit(); // commit scheme changes
         }
+    }
+
+    public synchronized void startWriterThread() {
+        if (writerThreadRunning) {
+            return;
+        }
+        writerThreadRunning = true;
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                while (writerThreadRunning) {
+                    try {
+                        Runnable r = (Runnable)writerQueue.take();
+                        try {
+                            r.run();
+                        } catch (Throwable x) {
+                            x.printStackTrace();
+                        }
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
+        });
+        t.setDaemon(true);
+        t.setName("PerstWriter");
+        writerThread = t;
+        t.start();
     }
 
     public boolean isOpened() {
@@ -2890,6 +2921,15 @@ public class StorageImpl implements Storage {
             commit();
             opened = false;
         }
+        if (writerThreadRunning) {
+            writerThreadRunning = false;
+            if (writerThread != null) {
+                writerThread.interrupt();
+                try {
+                    writerThread.join();
+                } catch (InterruptedException x) {}
+            }
+        }
         if (gcThread != null) {
             gcThread.activate();
             try {
@@ -3151,33 +3191,57 @@ public class StorageImpl implements Storage {
         return oid == 0 ? null : lookupObject(oid, null);
     }
 
-    public/*protected*/ synchronized void modifyObject(Object obj) {
-        synchronized(objectCache) {
-            if (!isModified(obj)) {
-                modified = true;
-                if (useSerializableTransactions) {
-                    ThreadTransactionContext ctx = getTransactionContext();
-                    if (ctx.nested != 0) { // serializable transaction
-                        ctx.modified.add(obj);
-                        return;
+    public/*protected*/ void modifyObject(final Object obj) {
+        if (Thread.currentThread() == writerThread) {
+            synchronized(objectCache) {
+                if (!isModified(obj)) {
+                    modified = true;
+                    if (useSerializableTransactions) {
+                        ThreadTransactionContext ctx = getTransactionContext();
+                        if (ctx.nested != 0) { // serializable transaction
+                            ctx.modified.add(obj);
+                            return;
+                        }
                     }
+                    objectCache.setDirty(obj);
                 }
-                objectCache.setDirty(obj);
+            }
+        } else {
+            try {
+                writerQueue.put(new Runnable() {
+                    public void run() {
+                        modifyObject(obj);
+                    }
+                });
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
     }
 
-    public/*protected*/ synchronized void storeObject(Object obj)
+    public/*protected*/ void storeObject(final Object obj)
     {
         if (!opened) {
             throw new StorageError(StorageError.STORAGE_NOT_OPENED);
         }
-        if (useSerializableTransactions && getTransactionContext().nested != 0) {
-            // Store should not be used in serializable transaction mode
-            throw new StorageError(StorageError.INVALID_OPERATION, "store object");
-        }
-        synchronized (objectCache) {
-            storeObject0(obj, false);
+        if (Thread.currentThread() == writerThread) {
+            if (useSerializableTransactions && getTransactionContext().nested != 0) {
+                // Store should not be used in serializable transaction mode
+                throw new StorageError(StorageError.INVALID_OPERATION, "store object");
+            }
+            synchronized (objectCache) {
+                storeObject0(obj, false);
+            }
+        } else {
+            try {
+                writerQueue.put(new Runnable() {
+                    public void run() {
+                        storeObject(obj);
+                    }
+                });
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -5370,6 +5434,10 @@ public class StorageImpl implements Storage {
     CustomSerializer serializer;
 
     StorageListener listener;
+
+    Thread       writerThread;
+    BlockingQueue<Runnable> writerQueue;
+    volatile boolean writerThreadRunning;
 
     long      transactionId;
     IFile     file;
