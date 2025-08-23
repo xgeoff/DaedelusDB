@@ -153,8 +153,8 @@ class PerstDirectory extends Directory
         }
     }
 
-    static class PerstCatalogue extends PersistentResource { 
-        private FieldIndex index;
+    static class PerstCatalogue extends PersistentResource {
+        private FieldIndex<PerstFile> index;
                 
         PerstCatalogue() {}
         
@@ -167,9 +167,9 @@ class PerstDirectory extends Directory
         public String[] list()
         {
             String[] names = new String[index.size()];
-            Iterator iterator = index.entryIterator();
+            Iterator<Map.Entry<Object, PerstFile>> iterator = index.entryIterator();
             for (int i = 0; i < names.length; i++) {
-                names[i] = (String)((Map.Entry)iterator.next()).getKey();
+                names[i] = (String)iterator.next().getKey();
             }
             return names;
         }
@@ -183,7 +183,7 @@ class PerstDirectory extends Directory
         /** Returns the time the named file was last modified. */
         public long fileModified(String name) throws IOException 
         { 
-            PerstFile file = (PerstFile)index.get(name);
+            PerstFile file = index.get(name);
             if (file == null) { 
                 throw new FileNotFoundException(name);
             }
@@ -193,7 +193,7 @@ class PerstDirectory extends Directory
         /** Set the modified time of an existing file to now. */
         public void touchFile(String name) throws IOException 
         {
-            PerstFile file = (PerstFile)index.get(name);
+            PerstFile file = index.get(name);
             if (file == null) { 
                 throw new FileNotFoundException(name);
             }
@@ -204,7 +204,7 @@ class PerstDirectory extends Directory
         /** Removes an existing file in the directory. */
         public void deleteFile(String name)throws IOException
         {        
-            PerstFile file = (PerstFile)index.get(name);
+            PerstFile file = index.get(name);
             if (file == null) { 
                 throw new FileNotFoundException(name);
             }
@@ -224,11 +224,11 @@ class PerstDirectory extends Directory
             if (from.equals(to)) {
                 return;
             }
-            PerstFile fromFile = (PerstFile)index.get(from);
+            PerstFile fromFile = index.get(from);
             if (fromFile == null) { 
                 throw new FileNotFoundException(from);
             }
-            PerstFile toFile = (PerstFile)index.get(to);
+            PerstFile toFile = index.get(to);
             index.remove(fromFile);
             fromFile.name = to;
             index.set(fromFile);
@@ -241,7 +241,7 @@ class PerstDirectory extends Directory
         /** Returns the length of a file in the directory. */
         public long fileLength(String name) throws IOException
         {        
-            PerstFile file = (PerstFile)index.get(name);
+            PerstFile file = index.get(name);
             if (file == null) { 
                 throw new FileNotFoundException(name);
             }
@@ -252,7 +252,7 @@ class PerstDirectory extends Directory
             Returns a stream writing this file. */
         public IndexOutput createOutput(String name) throws IOException
         {
-            PerstFile file = (PerstFile)index.get(name);
+            PerstFile file = index.get(name);
             if (file == null) { 
                 file = new PerstFile(name);
                 index.put(file);
@@ -267,7 +267,7 @@ class PerstDirectory extends Directory
         /** Returns a stream reading an existing file. */
         public IndexInput openInput(String name) throws IOException
         {
-            PerstFile file = (PerstFile)index.get(name);
+            PerstFile file = index.get(name);
             if (file == null) { 
                 throw new FileNotFoundException(name);
             }
@@ -287,28 +287,42 @@ class PerstDirectory extends Directory
 
 
     /** Returns an array of strings, one for each file in the directory. */
-    public String[] list() throws IOException {
+    @Override
+    public String[] listAll() throws IOException {
         return impl.list();
     }
 
+    /**
+     * @deprecated Use {@link #listAll()} instead.
+     */
+    @Override
+    @Deprecated
+    public String[] list() throws IOException {
+        return listAll();
+    }
+
     /** Returns true iff a file with the given name exists. */
+    @Override
     public boolean fileExists(String name) throws IOException {
         return impl.fileExists(name);
     }
     
     /** Returns the time the named file was last modified. */
+    @Override
     public long fileModified(String name) throws IOException {
-        return impl.fileModified(name); 
+        return impl.fileModified(name);
     }
 
     /** Set the modified time of an existing file to now. */
+    @Override
     public void touchFile(String name) throws IOException {
-        impl.touchFile(name); 
+        impl.touchFile(name);
     }
         
     /** Removes an existing file in the directory. */
+    @Override
     public void deleteFile(String name) throws IOException {
-        impl.deleteFile(name); 
+        impl.deleteFile(name);
     }
 
     /**
@@ -318,23 +332,27 @@ class PerstDirectory extends Directory
      * @deprecated Use {@link java.nio.file.Files#move(java.nio.file.Path, java.nio.file.Path, java.nio.file.CopyOption...)}
      *             or the newer {@code Directory#rename} API instead.
      */
+    @Override
     @Deprecated
     public void renameFile(String from, String to) throws IOException {
         impl.renameFile(from, to);
     }
 
     /** Returns the length of a file in the directory. */
+    @Override
     public long fileLength(String name) throws IOException {
         return impl.fileLength(name);
     }
 
     /** Creates a new, empty file in the directory with the given name.
         Returns a stream writing this file. */
+    @Override
     public IndexOutput createOutput(String name) throws IOException {
         return impl.createOutput(name);
     }
 
     /** Returns a stream reading an existing file. */
+    @Override
     public IndexInput openInput(String name) throws IOException {
         return impl.openInput(name);
     }
@@ -342,11 +360,13 @@ class PerstDirectory extends Directory
     /** Construct a {@link Lock}.
      * @param name the name of the lock file
      */
+    @Override
     public Lock makeLock(String name) {
         return impl.makeLock(name);
     }
 
     /** Closes the store. */
+    @Override
     public void close() throws IOException {
         impl.close();
     }
