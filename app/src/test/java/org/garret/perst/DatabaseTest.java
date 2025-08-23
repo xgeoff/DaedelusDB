@@ -18,6 +18,7 @@ import java.util.Iterator;
 /**
  * These tests verifies an functionality of the <code>Database</code> class.
  */
+@SuppressWarnings("deprecation")
 public class DatabaseTest {
 
     Storage storage;

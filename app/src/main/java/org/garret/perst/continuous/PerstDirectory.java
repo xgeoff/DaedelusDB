@@ -212,12 +212,16 @@ class PerstDirectory extends Directory
             file.deallocate();
         }
         
-        /** Renames an existing file in the directory.
-            If a file already exists with the new name, then it is replaced.
-            This replacement should be atomic. */
-        public void renameFile(String from, String to) throws IOException
-        {
-            if (from.equals(to)) { 
+        /**
+         * Renames an existing file in the directory.
+         * If a file already exists with the new name, then it is replaced.
+         * This replacement should be atomic.
+         * @deprecated Use {@link java.nio.file.Files#move(java.nio.file.Path, java.nio.file.Path, java.nio.file.CopyOption...)}
+         *             or higher level APIs instead.
+         */
+        @Deprecated
+        public void renameFile(String from, String to) throws IOException {
+            if (from.equals(to)) {
                 return;
             }
             PerstFile fromFile = (PerstFile)index.get(from);
@@ -307,11 +311,13 @@ class PerstDirectory extends Directory
         impl.deleteFile(name); 
     }
 
-    /** Renames an existing file in the directory.
-        If a file already exists with the new name, then it is replaced.
-        This replacement should be atomic. 
-        * @deprecated 
-        */
+    /**
+     * Renames an existing file in the directory.
+     * If a file already exists with the new name, then it is replaced.
+     * This replacement should be atomic.
+     * @deprecated Use {@link java.nio.file.Files#move(java.nio.file.Path, java.nio.file.Path, java.nio.file.CopyOption...)}
+     *             or the newer {@code Directory#rename} API instead.
+     */
     @Deprecated
     public void renameFile(String from, String to) throws IOException {
         impl.renameFile(from, to);
