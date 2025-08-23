@@ -3391,17 +3391,33 @@ public class StorageImpl implements Storage {
     }
 
     public/*protected*/ synchronized void loadObject(Object obj) {
+        int oid = getOid(obj);
+        checkReadLock(oid);
         if (isRaw(obj)) {
-            loadStub(getOid(obj), obj, obj.getClass());
+            loadStub(oid, obj, obj.getClass());
         }
     }
 
     final synchronized Object lookupObject(int oid, Class cls) {
+        checkReadLock(oid);
         Object obj = objectCache.get(oid);
         if (obj == null || isRaw(obj)) {
             obj = loadStub(oid, obj, cls);
         }
         return obj;
+    }
+
+    /**
+     * Check if object is currently write locked and wait until the write lock is released.
+     * This method blocks only when another thread is updating the object.
+     *
+     * @param oid object identifier
+     */
+    public void checkReadLock(int oid) {
+        if (lockManager.isWriteLocked(oid)) {
+            lockManager.acquireRead(oid);
+            lockManager.releaseRead(oid);
+        }
     }
 
     protected int swizzle(Object obj, boolean finalized) {
@@ -5384,6 +5400,8 @@ public class StorageImpl implements Storage {
     int     slaveConnectionTimeout = 60; // seconds
 
     Properties properties = new Properties();
+
+    LockManager lockManager = new LockManager();
 
     String    encoding = null;
 

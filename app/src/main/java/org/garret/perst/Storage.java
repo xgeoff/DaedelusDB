@@ -733,6 +733,15 @@ public interface Storage {
     public Object getObjectByOID(int oid);
 
     /**
+     * Ensure that reading an object is safe with respect to concurrent writes.
+     * If the object with the specified OID is currently write locked by another
+     * thread, this method blocks until the lock is released.
+     *
+     * @param oid object oid
+     */
+    public void checkReadLock(int oid);
+
+    /**
      * Explicitely make object peristent. Usually objects are made persistent
      * implicitlely using "persistency on reachability apporach", but this
      * method allows to do it explicitly. If object is already persistent, execution of
