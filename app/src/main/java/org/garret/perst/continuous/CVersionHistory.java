@@ -12,6 +12,7 @@ import org.garret.perst.*;
  */
 public class CVersionHistory<V extends CVersion> extends Persistent implements Iterable<V>
 {
+    public CVersionHistory() {}
     /**
      * Get current version in the version history for the current transaction.
      * @return current version for the current transaction or null if none 

@@ -2,8 +2,9 @@ package org.garret.perst.continuous;
 
 import org.garret.perst.*;
 
-class VersionHistorySegment extends Persistent 
-{ 
+class VersionHistorySegment extends Persistent
+{
+    public VersionHistorySegment() {}
     CVersionHistory vh;
     int from;
     int till;
