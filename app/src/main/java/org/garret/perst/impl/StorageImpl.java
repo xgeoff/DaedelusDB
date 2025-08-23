@@ -996,7 +996,7 @@ public class StorageImpl implements Storage {
 
         objMap = new ObjectMap(objectCacheInitSize);
 
-        classDescMap = new HashMap();
+        classDescMap = new HashMap<Class,ClassDescriptor>();
         descList = null;
 
         recursiveLoadingPolicy = new HashMap();
@@ -1285,7 +1285,7 @@ public class StorageImpl implements Storage {
     }
 
     final ClassDescriptor findClassDescriptor(Class cls) {
-        return (ClassDescriptor)classDescMap.get(cls);
+        return classDescMap.get(cls);
     }
 
     final ClassDescriptor getClassDescriptor(Class cls) {
@@ -1298,12 +1298,12 @@ public class StorageImpl implements Storage {
     }
 
 
-    public synchronized Object getRoot() {
+    public synchronized <T> T getRoot() {
         if (!opened) {
             throw new StorageError(StorageError.STORAGE_NOT_OPENED);
         }
         int rootOid = header.root[1-currIndex].rootObject;
-        return (rootOid == 0) ? null : lookupObject(rootOid, null);
+        return (rootOid == 0) ? null : (T)lookupObject(rootOid, null);
     }
 
     public synchronized void setRoot(Object root) {
@@ -2278,7 +2278,7 @@ public class StorageImpl implements Storage {
     }
 
 
-    public synchronized HashMap getMemoryDump() {
+    public synchronized HashMap<Class,MemoryUsage> getMemoryDump() {
         synchronized (objectCache) {
             if (!opened) {
                 throw new StorageError(StorageError.STORAGE_NOT_OPENED);
@@ -2292,7 +2292,7 @@ public class StorageImpl implements Storage {
             greyBitmap = new int[bitmapSize];
             blackBitmap = new int[bitmapSize];
             int rootOid = header.root[currIndex].rootObject;
-            HashMap map = new HashMap();
+            HashMap<Class,MemoryUsage> map = new HashMap<Class,MemoryUsage>();
 
             if (rootOid != 0) {
                 MemoryUsage indexUsage = new MemoryUsage(Index.class);
@@ -5467,8 +5467,8 @@ public class StorageImpl implements Storage {
     Object    transactionMonitor;
     PersistentResource transactionLock;
 
-    final ThreadLocal transactionContext = new ThreadLocal() {
-         protected synchronized Object initialValue() {
+    final ThreadLocal<ThreadTransactionContext> transactionContext = new ThreadLocal<ThreadTransactionContext>() {
+         protected synchronized ThreadTransactionContext initialValue() {
              return new ThreadTransactionContext();
          }
     };
@@ -5476,7 +5476,7 @@ public class StorageImpl implements Storage {
 
 
     OidHashTable     objectCache;
-    HashMap          classDescMap;
+    HashMap<Class,ClassDescriptor> classDescMap;
     ClassDescriptor  descList;
 }
 
