@@ -1,10 +1,7 @@
 package biz.digitalindustry.db.graph;
 
-
 import org.garret.perst.*;
 import java.util.*;
-
-import org.garret.perst.*;
 
 public class GraphNode extends Persistent {
     public String id;
