@@ -187,7 +187,7 @@ class Btree<T> extends PersistentCollection<T> implements Index<T> {
 
     public T set(Key key, T obj) {
         int oid = insert(key, obj, true);
-        return (T)((oid != 0) ? ((StorageImpl)getStorage()).lookupObject(oid, null) :  null);
+        return (oid != 0) ? ((StorageImpl)getStorage()).lookupObject(oid, null) : null;
     }
 
     final int insert(Key key, T obj, boolean overwrite) {
@@ -281,7 +281,7 @@ class Btree<T> extends PersistentCollection<T> implements Index<T> {
         BtreeKey rk = new BtreeKey(checkKey(key), 0);
         StorageImpl db = (StorageImpl)getStorage();
         remove(rk);
-        return (T)db.lookupObject(rk.oldOid, null);
+        return db.lookupObject(rk.oldOid, null);
     }
         
     static Key getKeyFromObject(int type, Object o) {
@@ -458,8 +458,8 @@ class Btree<T> extends PersistentCollection<T> implements Index<T> {
             return key;
         }
 
-        public T getValue() { 
-            return (T)db.lookupObject(oid, null);
+        public T getValue() {
+            return db.lookupObject(oid, null);
         }
 
         public T setValue(T value) { 
