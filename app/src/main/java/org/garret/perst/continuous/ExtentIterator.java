@@ -3,14 +3,15 @@ package org.garret.perst.continuous;
 import java.util.*;
 import org.garret.perst.*;
 
-class ExtentIterator<T> extends IterableIterator<T> 
-{ 
-    ExtentIterator(Iterator<CVersionHistory> iterator, IResource resource, VersionSelector selector) {
+class ExtentIterator<T> extends IterableIterator<T>
+{
+    ExtentIterator(Class<T> type, Iterator<CVersionHistory> iterator, IResource resource, VersionSelector selector) {
+        this.type = type;
         this.iterator = iterator;
         this.resource = resource;
         this.selector = selector;
         TransactionContext ctx = CDatabase.getTransactionContext();
-        transId = ctx != null ? ctx.transId : TransactionContext.IMPLICIT_TRANSACTION_ID; 
+        transId = ctx != null ? ctx.transId : TransactionContext.IMPLICIT_TRANSACTION_ID;
     }
     
     public boolean hasNext() 
@@ -133,7 +134,7 @@ class ExtentIterator<T> extends IterableIterator<T>
         }
         CVersion obj = currVersion;
         currVersion = null;
-        return (T)obj;
+        return type.cast(obj);
     }
     
     public void remove() { 
@@ -141,6 +142,7 @@ class ExtentIterator<T> extends IterableIterator<T>
     }
         
 
+    private Class<T> type;
     private Iterator<CVersionHistory> iterator;
     private IResource resource;
     private VersionSelector selector;

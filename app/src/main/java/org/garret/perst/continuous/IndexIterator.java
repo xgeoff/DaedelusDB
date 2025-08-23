@@ -3,15 +3,16 @@ package org.garret.perst.continuous;
 import java.util.*;
 import org.garret.perst.*;
 
-class IndexIterator<T> extends IterableIterator<T> 
+class IndexIterator<T> extends IterableIterator<T>
 {
-    IndexIterator(Iterator<VersionHistorySegment> iterator, IResource resource, VersionSelector selector) 
+    IndexIterator(Class<T> type, Iterator<VersionHistorySegment> iterator, IResource resource, VersionSelector selector)
     {
+        this.type = type;
         this.iterator = iterator;
         this.resource = resource;
         this.selector = selector;
         TransactionContext ctx = CDatabase.getTransactionContext();
-        transId = ctx != null ? ctx.transId : TransactionContext.IMPLICIT_TRANSACTION_ID; 
+        transId = ctx != null ? ctx.transId : TransactionContext.IMPLICIT_TRANSACTION_ID;
     }
 
     
@@ -126,13 +127,14 @@ class IndexIterator<T> extends IterableIterator<T>
         }
         CVersion obj = currVersion;
         currVersion = null;
-        return (T)obj;
+        return type.cast(obj);
     }
 
     public void remove() {
         throw new UnsupportedOperationException();
     }
 
+    private Class<T> type;
     private Iterator<VersionHistorySegment> iterator;
     private IResource resource;
     private VersionSelector selector;

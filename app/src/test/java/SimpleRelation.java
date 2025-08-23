@@ -83,7 +83,7 @@ class Employee extends CVersion
     private int age;
 
     @Indexable
-    private CVersionHistory<Company> company;
+    private CVersionHistory company;
 
     public String getName() { 
         return name;
@@ -93,8 +93,8 @@ class Employee extends CVersion
         return age;
     }
 
-    public Company getCompany() { 
-        return company.getCurrent();
+    public Company getCompany() {
+        return (Company)company.getCurrent();
     }
 
     public void setCompany(Company company) { 

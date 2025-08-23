@@ -3,10 +3,11 @@ package org.garret.perst.continuous;
 import java.util.*;
 import org.garret.perst.*;
 
-class IndexFilter<T> extends PersistentCollection<T> implements GenericIndex<T> 
+class IndexFilter<T> extends PersistentCollection<T> implements GenericIndex<T>
 {
-    IndexFilter(TableDescriptor.IndexDescriptor desc, IResource resource, VersionSelector selector)
+    IndexFilter(Class<T> type, TableDescriptor.IndexDescriptor desc, IResource resource, VersionSelector selector)
     {
+        this.type = type;
         this.index = desc.index;
         this.resource = resource;
         this.selector = selector;
@@ -77,7 +78,7 @@ class IndexFilter<T> extends PersistentCollection<T> implements GenericIndex<T>
     {
         resource.sharedLock();
         try { 
-            return new IndexIterator<T>(index.iterator(from, till, order), resource, selector);
+            return new IndexIterator<T>(type, index.iterator(from, till, order), resource, selector);
         } finally { 
             resource.unlock();
         } 
@@ -99,7 +100,7 @@ class IndexFilter<T> extends PersistentCollection<T> implements GenericIndex<T>
     {
         resource.sharedLock();
         try {
-            return new IndexIterator<T>(index.prefixIterator(prefix), resource, selector);
+            return new IndexIterator<T>(type, index.prefixIterator(prefix), resource, selector);
         } finally {
             resource.unlock();
         }
@@ -109,7 +110,7 @@ class IndexFilter<T> extends PersistentCollection<T> implements GenericIndex<T>
     {
         resource.sharedLock();
         try {
-            return new IndexIterator<T>(index.prefixIterator(prefix, order), resource, selector);
+            return new IndexIterator<T>(type, index.prefixIterator(prefix, order), resource, selector);
         } finally {
             resource.unlock();
         }
@@ -144,6 +145,7 @@ class IndexFilter<T> extends PersistentCollection<T> implements GenericIndex<T>
         throw new AbstractMethodError();
     }
 
+    private Class<T> type;
     private Index<VersionHistorySegment> index;
     private IResource resource;
     private VersionSelector selector;

@@ -282,8 +282,8 @@ public class CDatabase {
      * @exception AmbiguousVersionException when some other version from the same version history was already updated by the current transaction
      * @exception TransactionNotStartedException if transaction was not started by this thread using CDatabase.beginTransaction
      */
-    public <T extends CVersion> T update(T record) { 
-        return (T)record.update();
+    public CVersion update(CVersion record) {
+        return record.update();
     }
 
     /**
@@ -382,7 +382,7 @@ public class CDatabase {
      */         
     public <T extends CVersion> List<T> toList(Iterator<T> iterator, int limit)
     { 
-        ArrayList<T> list = new ArrayList();
+        ArrayList<T> list = new ArrayList<T>();
         root.sharedLock();
         try { 
             while (--limit >= 0 && iterator.hasNext()) { 
@@ -418,7 +418,7 @@ public class CDatabase {
      */         
     public <T extends CVersion> T[] toArray(T[] arr, Iterator<T> iterator, VersionSortOrder order) 
     { 
-        ArrayList<T> list = new ArrayList();
+        ArrayList<T> list = new ArrayList<T>();
         root.sharedLock();
         try { 
             while (iterator.hasNext()) { 
@@ -448,7 +448,7 @@ public class CDatabase {
      * @exception CompileError exception is thrown if predicate is not valid JSQL exception
      * @exception JSQLRuntimeException exception is thrown if there is runtime error during query execution
      */
-    public <T extends CVersion> IterableIterator<T> select(Class table, String predicate) 
+    public <T extends CVersion> IterableIterator<T> select(Class<T> table, String predicate)
     { 
         return select(table, predicate, VersionSelector.CURRENT);
     }
@@ -463,9 +463,9 @@ public class CDatabase {
      * @exception CompileError exception is thrown if predicate is not valid JSQL exception
      * @exception JSQLRuntimeException exception is thrown if there is runtime error during query execution
      */
-    public <T extends CVersion> IterableIterator<T> select(Class table, String predicate, VersionSelector selector)
+    public <T extends CVersion> IterableIterator<T> select(Class<T> table, String predicate, VersionSelector selector)
     { 
-        Query q = prepare(table, predicate);
+        Query<T> q = prepare(table, predicate);
         return q.execute(getRecords(table, selector));
     }
 
@@ -479,7 +479,7 @@ public class CDatabase {
      * @return prepared query
      * @exception CompileError exception is thrown if predicate is not valid JSQL exception
      */
-    public <T extends CVersion> Query<T> prepare(Class table, String predicate) 
+    public <T extends CVersion> Query<T> prepare(Class<T> table, String predicate)
     { 
         return prepare(table, predicate, VersionSelector.CURRENT);
     }
@@ -495,9 +495,9 @@ public class CDatabase {
      * @return prepared query
      * @exception CompileError exception is thrown if predicate is not valid JSQL exception
      */
-    public <T extends CVersion> Query<T> prepare(Class table, String predicate, VersionSelector selector) 
+    public <T extends CVersion> Query<T> prepare(Class<T> table, String predicate, VersionSelector selector)
     { 
-        Query q = storage.createQuery();
+        Query<T> q = storage.<T>createQuery();
         q.prepare(table, predicate);            
         TableDescriptor desc = lookupTable(table);
         if (desc != null) { 
@@ -512,7 +512,7 @@ public class CDatabase {
      * @return iterator through all table records. If there are no instances of such class in the database, then empty
      * iterator is returned
      */
-    public <T extends CVersion> IterableIterator<T> getRecords(Class table)
+    public <T extends CVersion> IterableIterator<T> getRecords(Class<T> table)
     {
         return getRecords(table, VersionSelector.CURRENT);
     }
@@ -524,14 +524,14 @@ public class CDatabase {
      * @return iterator through all table records. If there are no instances of such class in the database, then empty
      * iterator is returned
      */
-    public <T extends CVersion> IterableIterator<T> getRecords(Class table, VersionSelector selector)
+    public <T extends CVersion> IterableIterator<T> getRecords(Class<T> table, VersionSelector selector)
     {         
         root.sharedLock();
         try { 
             TableDescriptor desc = lookupTable(table);        
-            IterableIterator<T> iterator = (desc == null) 
-                ? new EmptyIterator<T>() 
-                : new ExtentIterator<T>(desc.iterator(), root, selector);
+            IterableIterator<T> iterator = (desc == null)
+                ? new EmptyIterator<T>()
+                : new ExtentIterator<T>(table, desc.iterator(), root, selector);
             return iterator;
         } finally { 
             root.unlock();
@@ -547,7 +547,7 @@ public class CDatabase {
      * If there are no instances of such class in the database, then empty iterator is returned
      * @exception NoSuchIndexException if there is no index for the specified field
      */
-    public <T extends CVersion> IterableIterator<T> find(Class table, String field, Key key) throws NoSuchIndexException 
+    public <T extends CVersion> IterableIterator<T> find(Class<T> table, String field, Key key) throws NoSuchIndexException
     {
         return find(table, field, key, VersionSelector.CURRENT);
     }
@@ -562,7 +562,7 @@ public class CDatabase {
      * If there are no instances of such class in the database, then empty iterator is returned
      * @exception NoSuchIndexException if there is no index for the specified field
      */
-    public <T extends CVersion> IterableIterator<T> find(Class table, String field, Key key, VersionSelector selector) throws NoSuchIndexException 
+    public <T extends CVersion> IterableIterator<T> find(Class<T> table, String field, Key key, VersionSelector selector) throws NoSuchIndexException
     {
         TableDescriptor desc = lookupTable(table);
         if (desc == null) { 
@@ -573,7 +573,7 @@ public class CDatabase {
             throw new NoSuchIndexException(field);
         }
         key = idesc.checkKey(key);
-        return new IndexFilter<T>(idesc, root, selector).iterator(key, key, GenericIndex.ASCENT_ORDER);
+        return new IndexFilter<T>(table, idesc, root, selector).iterator(key, key, GenericIndex.ASCENT_ORDER);
     }
 
     /**
@@ -588,7 +588,7 @@ public class CDatabase {
      * If there are no instances of such class in the database, then empty iterator is returned
      * @exception NoSuchIndexException if there is no index for the specified field
      */
-    public <T extends CVersion> IterableIterator<T> find(Class table, String field, Key min, Key max, VersionSelector selector, int order)
+    public <T extends CVersion> IterableIterator<T> find(Class<T> table, String field, Key min, Key max, VersionSelector selector, int order)
     {
         TableDescriptor desc = lookupTable(table);
         if (desc == null) { 
@@ -598,7 +598,7 @@ public class CDatabase {
         if (idesc == null) { 
             throw new NoSuchIndexException(field);
         }
-        return new IndexFilter<T>(idesc, root, selector).iterator(idesc.checkKey(min), idesc.checkKey(max), order);
+        return new IndexFilter<T>(table, idesc, root, selector).iterator(idesc.checkKey(min), idesc.checkKey(max), order);
     }
 
     /**
@@ -711,17 +711,17 @@ public class CDatabase {
                 }
                 indexWriter = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
                 for (TableDescriptor table : root.tables) {
-                    for (CVersionHistory<?> vh : table) {
-                        for (CVersion v : vh) { 
-                            if (!v.isDeletedVersion()) { 
+                    for (CVersionHistory vh : table) {
+                        for (CVersion v : vh) {
+                            if (!v.isDeletedVersion()) {
                                 Document doc = table.buildDocument(v);
-                                if (doc != null) { 
+                                if (doc != null) {
                                     indexWriter.addDocument(doc);
                                 }
                             }
                         }
                     }
-                }                                       
+                }
                 indexWriter.optimize();
             } catch (IOException x) {
                 throw new IOError(x);

@@ -13,7 +13,7 @@ public class CVersion extends Persistent
     /**
      * Get version history containing this version
      */
-    public <T extends CVersion> CVersionHistory<T> getVersionHistory() { 
+    public CVersionHistory getVersionHistory() {
         return history;
     }
 
@@ -23,8 +23,8 @@ public class CVersion extends Persistent
      * @exception AmbiguousVersionException when some other version from the same version history was already updated by the current transaction
      * @exception TransactionNotStartedException if transaction was not started by this thread using CDatabase.beginTransaction
      */
-    public <T extends CVersion> T update() {         
-        return (T)(((flags & WORKING_COPY) != 0) ? this : CDatabase.getWriteTransactionContext().update(this));
+    public CVersion update() {
+        return ((flags & WORKING_COPY) != 0) ? this : CDatabase.getWriteTransactionContext().update(this);
     }
 
     /**
