@@ -16,7 +16,7 @@ public class ContinuousModeTest {
 
     @Test
     public void continuousIncrements() throws Exception {
-        File dbFile = new File(getClass().getClassLoader().getResource("continuous.dbs").toURI());
+        File dbFile = File.createTempFile("continuous", ".dbs");
         dbFile.delete();
         Storage storage = StorageFactory.getInstance().createStorage();
         storage.open(dbFile.getPath());
