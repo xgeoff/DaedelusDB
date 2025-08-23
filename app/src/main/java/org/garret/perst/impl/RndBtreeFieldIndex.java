@@ -8,7 +8,7 @@ class RndBtreeFieldIndex<T> extends RndBtree<T> implements FieldIndex<T> {
     String className;
     String fieldName;
     long   autoincCount;
-    transient Class cls;
+    transient Class<T> cls;
     transient Field fld;
 
     RndBtreeFieldIndex() {}
@@ -31,11 +31,11 @@ class RndBtreeFieldIndex<T> extends RndBtree<T> implements FieldIndex<T> {
 
     public void onLoad()
     {
-        cls = ClassDescriptor.loadClass(getStorage(), className);
+        cls = (Class<T>)ClassDescriptor.loadClass(getStorage(), className);
         locateField();
     }
 
-    RndBtreeFieldIndex(Class cls, String fieldName, boolean unique) {
+    RndBtreeFieldIndex(Class<T> cls, String fieldName, boolean unique) {
         this.cls = cls;
         this.unique = unique;
         this.fieldName = fieldName;
@@ -245,10 +245,10 @@ class RndBtreeFieldIndex<T> extends RndBtree<T> implements FieldIndex<T> {
     }
 }
 
-class RndBtreeCaseInsensitiveFieldIndex<T> extends RndBtreeFieldIndex<T> {    
+class RndBtreeCaseInsensitiveFieldIndex<T> extends RndBtreeFieldIndex<T> {
     RndBtreeCaseInsensitiveFieldIndex() {}
 
-    RndBtreeCaseInsensitiveFieldIndex(Class cls, String fieldName, boolean unique) {
+    RndBtreeCaseInsensitiveFieldIndex(Class<T> cls, String fieldName, boolean unique) {
         super(cls, fieldName, unique);
     }
 

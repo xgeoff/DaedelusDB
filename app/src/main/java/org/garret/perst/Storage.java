@@ -543,7 +543,7 @@ public interface Storage {
      * @exception StorageError (StorageError.INDEXED_FIELD_NOT_FOUND) if there is no such field in specified class,<BR> 
      * StorageError(StorageError.UNSUPPORTED_INDEX_TYPE) exception if type of specified field is not supported by implementation
      */
-    public <T> FieldIndex<T> createRandomAccessFieldIndex(Class type, String fieldName, boolean unique);
+    public <T> FieldIndex<T> createRandomAccessFieldIndex(Class<T> type, String fieldName, boolean unique);
 
     /**
      * Create new field index optimized for access by element position.
@@ -555,7 +555,7 @@ public interface Storage {
      * @exception StorageError (StorageError.INDEXED_FIELD_NOT_FOUND) if there is no such field in specified class,<BR> 
      * StorageError(StorageError.UNSUPPORTED_INDEX_TYPE) exception if type of specified field is not supported by implementation
      */
-    public <T> FieldIndex<T> createRandomAccessFieldIndex(Class type, String fieldName, boolean unique, boolean caseInsensitive);
+    public <T> FieldIndex<T> createRandomAccessFieldIndex(Class<T> type, String fieldName, boolean unique, boolean caseInsensitive);
 
     /**
      * Create new mutlifield index optimized for access by element position.
@@ -566,7 +566,7 @@ public interface Storage {
      * @exception StorageError (StorageError.INDEXED_FIELD_NOT_FOUND) if there is no such field in specified class,<BR> 
      * StorageError(StorageError.UNSUPPORTED_INDEX_TYPE) exception if type of specified field is not supported by implementation
      */
-    public <T> FieldIndex<T> createRandomAccessFieldIndex(Class type, String[] fieldNames, boolean unique);
+    public <T> FieldIndex<T> createRandomAccessFieldIndex(Class<T> type, String[] fieldNames, boolean unique);
 
     /**
      * Create new mutlifield index optimized for access by element position.
@@ -578,7 +578,7 @@ public interface Storage {
      * @exception StorageError (StorageError.INDEXED_FIELD_NOT_FOUND) if there is no such field in specified class,<BR> 
      * StorageError(StorageError.UNSUPPORTED_INDEX_TYPE) exception if type of specified field is not supported by implementation
      */
-    public <T> FieldIndex<T> createRandomAccessFieldIndex(Class type, String[] fieldNames, boolean unique, boolean caseInsensitive);
+    public <T> FieldIndex<T> createRandomAccessFieldIndex(Class<T> type, String[] fieldNames, boolean unique, boolean caseInsensitive);
 
      /**
      * Create new spatial index with integer coordinates

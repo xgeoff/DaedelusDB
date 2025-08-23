@@ -1995,11 +1995,11 @@ public class StorageImpl implements Storage {
     }
 
 
-    public <T> FieldIndex<T> createRandomAccessFieldIndex(Class type, String fieldName, boolean unique) {
+    public <T> FieldIndex<T> createRandomAccessFieldIndex(Class<T> type, String fieldName, boolean unique) {
         return this.<T>createRandomAccessFieldIndex(type, fieldName, unique, false);
     }
 
-    public synchronized <T> FieldIndex<T> createRandomAccessFieldIndex(Class type, String fieldName, boolean unique, boolean caseInsensitive) {
+    public synchronized <T> FieldIndex<T> createRandomAccessFieldIndex(Class<T> type, String fieldName, boolean unique, boolean caseInsensitive) {
         if (!opened) {
             throw new StorageError(StorageError.STORAGE_NOT_OPENED);
         }
@@ -2010,11 +2010,11 @@ public class StorageImpl implements Storage {
         return index;
     }
 
-    public <T> FieldIndex<T> createRandomAccessFieldIndex(Class type, String[] fieldNames, boolean unique) {
+    public <T> FieldIndex<T> createRandomAccessFieldIndex(Class<T> type, String[] fieldNames, boolean unique) {
         return this.<T>createRandomAccessFieldIndex(type, fieldNames, unique, false);
     }
 
-    public synchronized <T> FieldIndex<T> createRandomAccessFieldIndex(Class type, String[] fieldNames, boolean unique, boolean caseInsensitive) {
+    public synchronized <T> FieldIndex<T> createRandomAccessFieldIndex(Class<T> type, String[] fieldNames, boolean unique, boolean caseInsensitive) {
         if (!opened) {
             throw new StorageError(StorageError.STORAGE_NOT_OPENED);
         }

@@ -20,8 +20,8 @@ public class TestCompoundIndex {
             }
         }
         db.open("testcidx.dbs", pagePoolSize);
-        FieldIndex root = (FieldIndex)db.getRoot();
-        if (root == null) { 
+        FieldIndex<Record> root = (FieldIndex<Record>)db.getRoot();
+        if (root == null) {
             root = db.createFieldIndex(Record.class, new String[]{"intKey", "strKey"}, true);
             db.setRoot(root);
         }

@@ -15,8 +15,8 @@ public class TestRndIndex {
         Storage db = StorageFactory.getInstance().createStorage();
         db.open("testrnd.dbs", pagePoolSize);
             
-        FieldIndex root = (FieldIndex)db.getRoot();
-        if (root == null) { 
+        FieldIndex<Record> root = (FieldIndex<Record>)db.getRoot();
+        if (root == null) {
             root = db.createRandomAccessFieldIndex(Record.class, "i", true);
             db.setRoot(root);
         }
