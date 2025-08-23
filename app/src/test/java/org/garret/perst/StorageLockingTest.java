@@ -52,6 +52,7 @@ public class StorageLockingTest {
 
         final CountDownLatch writerLocked = new CountDownLatch(1);
         final CountDownLatch writerDone = new CountDownLatch(1);
+        final CountDownLatch readersReady = new CountDownLatch(2);
         Thread writer = new Thread(new Runnable() {
             public void run() {
                 lm.acquireWrite(oid);
@@ -66,13 +67,16 @@ public class StorageLockingTest {
                 }
             }
         });
-        writer.start();
 
         final List<Long> readerDelays = new ArrayList<Long>();
-        Thread reader1 = new Thread(new Reader(root, oid, lm, writerLocked, readerDelays));
-        Thread reader2 = new Thread(new Reader(root, oid, lm, writerLocked, readerDelays));
+        Thread reader1 = new Thread(new Reader(root, oid, lm, writerLocked, readersReady, readerDelays));
+        Thread reader2 = new Thread(new Reader(root, oid, lm, writerLocked, readersReady, readerDelays));
         reader1.start();
         reader2.start();
+
+        // Ensure both readers are waiting before starting the writer
+        readersReady.await();
+        writer.start();
 
         writer.join();
         reader1.join();
@@ -90,18 +94,21 @@ public class StorageLockingTest {
         private final int oid;
         private final LockManager lm;
         private final CountDownLatch latch;
+        private final CountDownLatch ready;
         private final List<Long> delays;
 
-        Reader(Root root, int oid, LockManager lm, CountDownLatch latch, List<Long> delays) {
+        Reader(Root root, int oid, LockManager lm, CountDownLatch latch, CountDownLatch ready, List<Long> delays) {
             this.root = root;
             this.oid = oid;
             this.lm = lm;
             this.latch = latch;
+            this.ready = ready;
             this.delays = delays;
         }
 
         public void run() {
             try {
+                ready.countDown();
                 latch.await();
                 long start = System.currentTimeMillis();
                 storageCheckReadLock(root, oid, lm);
