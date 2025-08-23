@@ -13,7 +13,8 @@ import org.garret.perst.impl.LinkImpl;
 import org.garret.perst.impl.StorageImpl;
 
 class TableDescriptor extends Persistent implements Iterable<CVersionHistory>
-{ 
+{
+    public TableDescriptor() {}
     static class IndexDescriptor implements IValue
     {
         String  fieldName;
