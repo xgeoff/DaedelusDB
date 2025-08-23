@@ -5097,22 +5097,22 @@ public class StorageImpl implements Storage {
         this.serializer = serializer;
     }
 
-    class HashIterator implements PersistentIterator, Iterator
+    class HashIterator implements PersistentIterator, Iterator<Object>
     {
-        Iterator oids;
+        Iterator<Integer> oids;
 
-        HashIterator(HashSet result)
+        HashIterator(HashSet<Integer> result)
         {
             oids = result.iterator();
         }
 
         public Object next() {
-            int oid = ((Integer)oids.next()).intValue();
+            int oid = oids.next();
             return lookupObject(oid, null);
         }
 
         public int nextOid() {
-            return oids.hasNext() ? ((Integer)oids.next()).intValue() : 0;
+            return oids.hasNext() ? oids.next() : 0;
         }
 
         public boolean hasNext() {
@@ -5125,10 +5125,10 @@ public class StorageImpl implements Storage {
     }
 
     public Iterator merge(Iterator[] selections) {
-        HashSet result = null;
+        HashSet<Integer> result = null;
         for (int i = 0; i < selections.length; i++) {
             PersistentIterator iterator = (PersistentIterator)selections[i];
-            HashSet newResult = new HashSet();
+            HashSet<Integer> newResult = new HashSet<Integer>();
             int oid;
             while ((oid = iterator.nextOid()) != 0) {
                 Integer oidWrapper = Integer.valueOf(oid);
@@ -5142,13 +5142,13 @@ public class StorageImpl implements Storage {
             }
         }
         if (result == null) {
-            result = new HashSet();
+            result = new HashSet<Integer>();
         }
         return new HashIterator(result);
     }
 
     public Iterator join(Iterator[] selections) {
-        HashSet result = new HashSet();
+        HashSet<Integer> result = new HashSet<Integer>();
         for (int i = 0; i < selections.length; i++) {
             PersistentIterator iterator = (PersistentIterator)selections[i];
             int oid;
