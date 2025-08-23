@@ -19,8 +19,8 @@ public class TestMaxOid {
         Storage db = StorageFactory.getInstance().createStorage();
         db.open("testmaxoid.dbs", pagePoolSize);
         int i;
-        FieldIndex root = (FieldIndex)db.getRoot();
-        if (root == null) { 
+        FieldIndex<Record> root = (FieldIndex<Record>)db.getRoot();
+        if (root == null) {
             root = db.createFieldIndex(Record.class, "key", true);
             db.setRoot(root);
         }

@@ -178,8 +178,8 @@ public class Database implements IndexProvider {
         if (tables.get(table) == null) { 
             Table t = new Table();
             t.extent = storage.createSet();
-            t.indices = storage.createLink();
-            t.indicesMap = new HashMap();
+            t.indices = storage.<FieldIndex<?>>createLink();
+            t.indicesMap = new HashMap<String, FieldIndex<?>>();
             t.setClass(table);
             tables.put(table, t);
             metadata.metaclasses.put(table.getName(), t);
@@ -205,7 +205,7 @@ public class Database implements IndexProvider {
                     if (table.autoincrementIndex != null) { 
                         throw new UnsupportedOperationException("Table can have only one autoincrement field");
                     } 
-                    table.autoincrementIndex = (FieldIndex)table.indicesMap.get(f.getName());
+                    table.autoincrementIndex = table.indicesMap.get(f.getName());
                 }                    
             }            
         }
@@ -237,9 +237,7 @@ public class Database implements IndexProvider {
                             baseTable.extent.exclusiveLock();
                         }
                         if (baseTable.extent.remove(obj)) { 
-                            Iterator iterator = baseTable.indicesMap.values().iterator();
-                            while (iterator.hasNext()) { 
-                                FieldIndex index = (FieldIndex)iterator.next();
+                            for (FieldIndex<?> index : baseTable.indicesMap.values()) {
                                 index.remove(obj);
                             }
                         }
@@ -383,10 +381,10 @@ public class Database implements IndexProvider {
                 }
                 if (t.extent.add(record)) { 
                     wasInsertedIn.add(t.extent);
-                    Iterator iterator = t.indicesMap.values().iterator();
-                    while (iterator.hasNext()) { 
-                        FieldIndex index = (FieldIndex)iterator.next();
-                        if (index == t.autoincrementIndex) { 
+                    Iterator<FieldIndex<?>> iterator = t.indicesMap.values().iterator();
+                    while (iterator.hasNext()) {
+                        FieldIndex<T> index = (FieldIndex<T>)iterator.next();
+                        if (index == t.autoincrementIndex) {
                             index.append(record);
                             storage.modify(record);
                             wasInsertedIn.add(index);
@@ -399,7 +397,7 @@ public class Database implements IndexProvider {
                                 if (idx instanceof IPersistentSet) {
                                     ((IPersistentSet)idx).remove(record);
                                 } else { 
-                                    ((FieldIndex)idx).remove(record);
+                                    ((FieldIndex<?>)idx).remove(record);
                                 }
                             }
                             return false;
@@ -478,9 +476,9 @@ public class Database implements IndexProvider {
                     t.extent.exclusiveLock();
                 }
                 if (t.extent.remove(record)) { 
-                    Iterator iterator = t.indicesMap.values().iterator();
-                    while (iterator.hasNext()) { 
-                        FieldIndex index = (FieldIndex)iterator.next();
+                    Iterator<FieldIndex<?>> iterator = t.indicesMap.values().iterator();
+                    while (iterator.hasNext()) {
+                        FieldIndex<?> index = iterator.next();
                         index.remove(record);
                     }
                     if (t.fullTextIndexableFields.size() != 0) { 
@@ -625,7 +623,7 @@ public class Database implements IndexProvider {
      */
     public boolean dropIndex(Class table, String key) { 
         Table t = locateTable(table, true);
-        FieldIndex index = (FieldIndex)t.indicesMap.remove(key);
+        FieldIndex<?> index = t.indicesMap.remove(key);
         if (index != null) { 
             t.indices.remove(t.indices.indexOf(index));
             return true;
@@ -644,9 +642,9 @@ public class Database implements IndexProvider {
         for (Class c = table; c != null; c = c.getSuperclass()) { 
             Table t = locateTable(c, false, false);
             if (t != null) { 
-                synchronized (t.indicesMap) { 
-                    GenericIndex index = (GenericIndex)t.indicesMap.get(key);
-                    if (index != null) { 
+                synchronized (t.indicesMap) {
+                    GenericIndex<?> index = t.indicesMap.get(key);
+                    if (index != null) {
                         return index;
                     }
                     if (autoIndices && key.indexOf('.') < 0) {
@@ -659,8 +657,8 @@ public class Database implements IndexProvider {
                         if (listener != null) { 
                             listener.indexCreated(c, key);
                         }
-                        createIndex(t, c, key, INDEX_KIND_DEFAULT); 
-                        return (GenericIndex)t.indicesMap.get(key);
+                        createIndex(t, c, key, INDEX_KIND_DEFAULT);
+                        return t.indicesMap.get(key);
                     }
                 }
             }
@@ -718,9 +716,9 @@ public class Database implements IndexProvider {
                 if (multithreaded) { 
                     t.extent.exclusiveLock();
                 }
-                Iterator iterator = t.indicesMap.values().iterator();
-                while (iterator.hasNext()) { 
-                    FieldIndex index = (FieldIndex)iterator.next();
+                Iterator<FieldIndex<?>> iterator = t.indicesMap.values().iterator();
+                while (iterator.hasNext()) {
+                    FieldIndex<?> index = iterator.next();
                     index.remove(record);
                 }
                 if (t.fullTextIndexableFields.size() != 0) { 
@@ -773,7 +771,7 @@ public class Database implements IndexProvider {
      */
     public boolean excludeFromIndex(Class table, Object record, String key) {
         Table t = locateTable(table, true);
-        FieldIndex index = (FieldIndex)t.indicesMap.get(key);
+        FieldIndex<?> index = t.indicesMap.get(key);
         if (index != null) { 
             index.remove(record);
             return true;
@@ -827,19 +825,19 @@ public class Database implements IndexProvider {
                 if (multithreaded) { 
                     t.extent.exclusiveLock();
                 }
-                Iterator iterator = t.indicesMap.values().iterator();
-                while (iterator.hasNext()) { 
-                    FieldIndex index = (FieldIndex)iterator.next();
+                Iterator<FieldIndex<?>> iterator = t.indicesMap.values().iterator();
+                while (iterator.hasNext()) {
+                    FieldIndex<Object> index = (FieldIndex<Object>)iterator.next();
                     if (index.put(record)) {
                         wasInsertedIn.add(index);
-                    } else if (index.isUnique()) { 
+                    } else if (index.isUnique()) {
                         iterator = wasInsertedIn.iterator();
-                        while (iterator.hasNext()) { 
+                        while (iterator.hasNext()) {
                             Object idx = iterator.next();
                             if (idx instanceof IPersistentSet) {
                                 ((IPersistentSet)idx).remove(record);
-                            } else { 
-                                ((FieldIndex)idx).remove(record);
+                            } else {
+                                ((FieldIndex<Object>)idx).remove(record);
                             }
                         }
                         return false;
@@ -910,8 +908,8 @@ public class Database implements IndexProvider {
      */
     public boolean includeInIndex(Class table, Object record, String key) { 
         Table t = locateTable(table, true);
-        FieldIndex index = (FieldIndex)t.indicesMap.get(key);
-        if (index != null) { 
+        FieldIndex<Object> index = (FieldIndex<Object>)t.indicesMap.get(key);
+        if (index != null) {
             return index.put(record) || !index.isUnique();
         }
         return false;
@@ -1066,11 +1064,11 @@ public class Database implements IndexProvider {
         q.setClass(table);
         while (t != null) { 
             q.setClassExtent(t.extent, multithreaded ? forUpdate ? Query.ClassExtentLockType.Exclusive : Query.ClassExtentLockType.Shared : Query.ClassExtentLockType.None);
-            Iterator iterator = t.indicesMap.entrySet().iterator();
-            while (iterator.hasNext()) { 
-                Map.Entry entry = (Map.Entry)iterator.next();
-                FieldIndex index = (FieldIndex)entry.getValue();
-                String key = (String)entry.getKey();
+            Iterator<Map.Entry<String, FieldIndex<?>>> iterator = t.indicesMap.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<String, FieldIndex<?>> entry = iterator.next();
+                FieldIndex<?> index = entry.getValue();
+                String key = entry.getKey();
                 q.addIndex(key, index);
             }
             t = locateTable(t.type.getSuperclass(), forUpdate, false);
@@ -1227,12 +1225,12 @@ public class Database implements IndexProvider {
         
     static class Table extends Persistent { 
         IPersistentSet extent;
-        Link           indices;
+        Link<FieldIndex<?>>           indices;
 
-        transient HashMap indicesMap = new HashMap();
+        transient HashMap<String, FieldIndex<?>> indicesMap = new HashMap<String, FieldIndex<?>>();
         transient ArrayList<Field> fullTextIndexableFields;
         transient Class type;
-        transient FieldIndex autoincrementIndex;
+        transient FieldIndex<?> autoincrementIndex;
 
         void setClass(Class cls) {
             type = cls;
@@ -1249,25 +1247,25 @@ public class Database implements IndexProvider {
         } 
 
         public void onLoad() { 
-            for (int i = indices.size(); --i >= 0;) { 
-                FieldIndex index = (FieldIndex)indices.get(i);
+            for (int i = indices.size(); --i >= 0;) {
+                FieldIndex<?> index = indices.get(i);
                 Field key = index.getKeyFields()[0];
                 indicesMap.put(key.getName(), index);
                 Indexable idx = (Indexable)key.getAnnotation(Indexable.class);
-                if (idx != null && idx.autoincrement()) { 
+                if (idx != null && idx.autoincrement()) {
                     autoincrementIndex = index;
-                }                    
-            }            
+                }
+            }
         }
 
         public void deallocate() {
             extent.deallocate();
-            for (Object index : indicesMap.values()) { 
-                ((FieldIndex)index).deallocate();
+            for (FieldIndex<?> index : indicesMap.values()) {
+                index.deallocate();
             }
             super.deallocate();
         }
-    }                        
+    }
 
     HashMap<Class,Table> tables;
     Storage  storage;
