@@ -999,7 +999,7 @@ public class StorageImpl implements Storage {
         classDescMap = new HashMap<Class,ClassDescriptor>();
         descList = null;
 
-        recursiveLoadingPolicy = new HashMap();
+        recursiveLoadingPolicy = new HashMap<>();
         recursiveLoadingPolicyDefined = false;
 
         header = new Header();
@@ -5080,7 +5080,7 @@ public class StorageImpl implements Storage {
 
     public void registerClassLoader(INamedClassLoader loader) {
         if (loaderMap == null) {
-            loaderMap = new HashMap();
+            loaderMap = new HashMap<>();
         }
         loaderMap.put(loader.getName(), loader);
     }
@@ -5331,11 +5331,11 @@ public class StorageImpl implements Storage {
         {
             synchronized (recursiveLoadingPolicy)
             {
-                Class type = obj.getClass();
+                Class<?> type = obj.getClass();
                 do {
-                    Object enabled = recursiveLoadingPolicy.get(type);
+                    Boolean enabled = recursiveLoadingPolicy.get(type);
                     if (enabled != null){
-                        return ((Boolean)enabled).booleanValue();
+                        return enabled.booleanValue();
                     }
                 } while ((type = type.getSuperclass()) != null);
             }
@@ -5343,13 +5343,13 @@ public class StorageImpl implements Storage {
         return (obj instanceof IPersistent) ? ((IPersistent)obj).recursiveLoading() : true;
     }
 
-    public boolean setRecursiveLoading(Class type, boolean enabled)
+    public boolean setRecursiveLoading(Class<?> type, boolean enabled)
     {
         synchronized (recursiveLoadingPolicy)
         {
-            Object prevValue = recursiveLoadingPolicy.put(type, enabled);
+            Boolean prevValue = recursiveLoadingPolicy.put(type, enabled);
             recursiveLoadingPolicyDefined = true;
-            return prevValue == null ? true :  ((Boolean)prevValue).booleanValue();
+            return prevValue == null ? true :  prevValue.booleanValue();
         }
     }
 
@@ -5444,8 +5444,8 @@ public class StorageImpl implements Storage {
     int       bitmapExtentBase;
 
     ClassLoader loader;
-    HashMap     loaderMap;
-    HashMap     recursiveLoadingPolicy;
+    Map<String, INamedClassLoader> loaderMap;
+    Map<Class<?>, Boolean> recursiveLoadingPolicy;
     boolean     recursiveLoadingPolicyDefined;
 
 
