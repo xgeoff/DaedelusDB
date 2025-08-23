@@ -28,6 +28,9 @@ dependencies {
 
     // This dependency is used by the library code.
     implementation libs.guava
+    // Add legacy Lucene dependencies required by continuous mode
+    implementation 'org.apache.lucene:lucene-core:2.9.4'
+    implementation 'org.apache.lucene:lucene-analyzers:2.9.4'
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -43,7 +46,6 @@ sourceSets {
             // Exclude optional modules that require additional dependencies
             exclude 'org/garret/perst/lucene/**'
             exclude 'org/garret/perst/jassist/**'
-            exclude 'org/garret/perst/continuous/**'
             exclude 'org/garret/perst/rdf/**'
             exclude 'org/garret/perst/impl/sun14/**'
         }

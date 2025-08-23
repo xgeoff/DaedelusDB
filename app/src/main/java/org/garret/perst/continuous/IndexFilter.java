@@ -95,12 +95,22 @@ class IndexFilter<T> extends PersistentCollection<T> implements GenericIndex<T>
         throw new AbstractMethodError();
     }
 
-    public IterableIterator<T> prefixIterator(String prefix) 
+    public IterableIterator<T> prefixIterator(String prefix)
     {
         resource.sharedLock();
-        try { 
+        try {
             return new IndexIterator<T>(index.prefixIterator(prefix), resource, selector);
-        } finally { 
+        } finally {
+            resource.unlock();
+        }
+    }
+
+    public IterableIterator<T> prefixIterator(String prefix, int order)
+    {
+        resource.sharedLock();
+        try {
+            return new IndexIterator<T>(index.prefixIterator(prefix, order), resource, selector);
+        } finally {
             resource.unlock();
         }
     }
