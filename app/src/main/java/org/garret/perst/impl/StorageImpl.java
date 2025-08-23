@@ -3488,7 +3488,7 @@ public class StorageImpl implements Storage {
     }
 
 
-    protected Object unswizzle(int oid, Class cls, boolean recursiveLoading) {
+    protected <T> T unswizzle(int oid, Class<T> cls, boolean recursiveLoading) {
         if (oid == 0) {
             return null;
         }
@@ -3497,7 +3497,7 @@ public class StorageImpl implements Storage {
         }
         Object stub = objectCache.get(oid);
         if (stub != null) {
-            return stub;
+            return cls.cast(stub);
         }
         ClassDescriptor desc;
         if (cls == Object.class
@@ -3517,7 +3517,7 @@ public class StorageImpl implements Storage {
         stub = desc.newInstance();
         assignOid(stub, oid, true);
         objectCache.put(oid, stub);
-        return stub;
+        return cls.cast(stub);
     }
 
     final Object loadStub(int oid, Object obj, Class cls)
@@ -3672,7 +3672,7 @@ public class StorageImpl implements Storage {
         return offs;
     }
 
-    final Object unswizzle(ArrayPos obj, Class cls, Object parent, boolean recursiveLoading)
+    final <T> T unswizzle(ArrayPos obj, Class<T> cls, Object parent, boolean recursiveLoading)
       throws Exception
     {
         byte[] body = obj.body;
@@ -3718,10 +3718,10 @@ public class StorageImpl implements Storage {
                 break;
             case ClassDescriptor.tpString:
                 obj.offs = offs;
-                return Bytes.unpackString(obj, encoding);
+                return cls.cast(Bytes.unpackString(obj, encoding));
             case ClassDescriptor.tpClass:
                 obj.offs = offs;
-                return ClassDescriptor.loadClass(this, Bytes.unpackString(obj, encoding));
+                return cls.cast(ClassDescriptor.loadClass(this, Bytes.unpackString(obj, encoding)));
             case ClassDescriptor.tpLink:
                 {
                     int len = Bytes.unpack4(body, offs);
@@ -3744,8 +3744,7 @@ public class StorageImpl implements Storage {
                     byte[] arr = new byte[len];
                     System.arraycopy(body, offs, arr, 0, len);
                     offs += len;
-                    val = arr;
-                    break;
+                    return cls.cast(arr);
                 }
             case ClassDescriptor.tpArrayOfBoolean:
                 {
@@ -3755,8 +3754,7 @@ public class StorageImpl implements Storage {
                     for (int j = 0; j < len; j++) {
                         arr[j] = body[offs++] != 0;
                     }
-                    val = arr;
-                    break;
+                    return cls.cast(arr);
                 }
             case ClassDescriptor.tpArrayOfShort:
                 {
@@ -3767,8 +3765,7 @@ public class StorageImpl implements Storage {
                         arr[j] = Bytes.unpack2(body, offs);
                         offs += 2;
                     }
-                    val = arr;
-                    break;
+                    return cls.cast(arr);
                 }
             case ClassDescriptor.tpArrayOfChar:
                 {
@@ -3779,8 +3776,7 @@ public class StorageImpl implements Storage {
                         arr[j] = (char)Bytes.unpack2(body, offs);
                         offs += 2;
                     }
-                    val = arr;
-                    break;
+                    return cls.cast(arr);
                 }
             case ClassDescriptor.tpArrayOfInt:
                 {
@@ -3791,8 +3787,7 @@ public class StorageImpl implements Storage {
                         arr[j] = Bytes.unpack4(body, offs);
                         offs += 4;
                     }
-                    val = arr;
-                    break;
+                    return cls.cast(arr);
                 }
             case ClassDescriptor.tpArrayOfLong:
                 {
@@ -3803,8 +3798,7 @@ public class StorageImpl implements Storage {
                         arr[j] = Bytes.unpack8(body, offs);
                         offs += 8;
                     }
-                    val = arr;
-                    break;
+                    return cls.cast(arr);
                 }
             case ClassDescriptor.tpArrayOfFloat:
                 {
@@ -3815,8 +3809,7 @@ public class StorageImpl implements Storage {
                         arr[j] = Bytes.unpackF4(body, offs);
                         offs += 4;
                     }
-                    val = arr;
-                    break;
+                    return cls.cast(arr);
                 }
             case ClassDescriptor.tpArrayOfDouble:
                 {
@@ -3827,8 +3820,7 @@ public class StorageImpl implements Storage {
                         arr[j] = Bytes.unpackF8(body, offs);
                         offs += 8;
                     }
-                    val = arr;
-                    break;
+                    return cls.cast(arr);
                 }
             case ClassDescriptor.tpArrayOfObject:
                 {
@@ -3838,7 +3830,7 @@ public class StorageImpl implements Storage {
                     for (int j = 0; j < len; j++) {
                         arr[j] = unswizzle(obj, Object.class, parent, recursiveLoading);
                     }
-                    return arr;
+                    return cls.cast(arr);
                 }
             case ClassDescriptor.tpArrayOfRaw:
                 {
@@ -3856,7 +3848,7 @@ public class StorageImpl implements Storage {
                     for (int j = 0; j < len; j++) {
                         Array.set(arr, j, unswizzle(obj, elemType, parent, recursiveLoading));
                     }
-                    return arr;
+                    return cls.cast(arr);
                 }
             case ClassDescriptor.tpCustom:
                 {
@@ -3878,7 +3870,7 @@ public class StorageImpl implements Storage {
                         for (int i = 0; i < len; i++) {
                             collection.add(unswizzle(obj, Object.class, parent, recursiveLoading));
                         }
-                        return collection;
+                        return cls.cast(collection);
                     } else if (desc.isMap) {
                         int len = Bytes.unpack4(body, offs);
                         obj.offs = offs + 4;
@@ -3889,7 +3881,7 @@ public class StorageImpl implements Storage {
                             Object value = unswizzle(obj, Object.class, parent, recursiveLoading);
                             map.put(key, value);
                         }
-                        return map;
+                        return cls.cast(map);
                     } else {
                         offs = unpackObject(val, desc, recursiveLoading, body, offs, parent);
                     }
@@ -3901,7 +3893,12 @@ public class StorageImpl implements Storage {
             val = unswizzle(oid, cls, recursiveLoading);
         }
         obj.offs = offs;
-        return val;
+        if (cls.isPrimitive()) {
+            @SuppressWarnings("unchecked")
+            T t = (T)val;
+            return t;
+        }
+        return cls.cast(val);
     }
 
     final int unpackObject(Object obj, ClassDescriptor desc, boolean recursiveLoading, byte[] body, int offs, Object parent)
