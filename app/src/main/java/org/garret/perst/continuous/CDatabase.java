@@ -15,8 +15,9 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.queryParser.*;
-import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.util.Version;
 
 /**
  * <p>
@@ -643,10 +644,11 @@ public class CDatabase {
         ArrayList<FullTextSearchResult> result = null;
         root.sharedLock();
         try { 
-            Hits hits;
-            try { 
-                IndexSearcher searcher = new IndexSearcher(getIndexReader());
-                if (selector.kind == VersionSelector.Kind.TimeSlice) { 
+            TopDocs hits;
+            IndexSearcher searcher = null;
+            try {
+                searcher = new IndexSearcher(getIndexReader());
+                if (selector.kind == VersionSelector.Kind.TimeSlice) {
                     long from = selector.from != null ? selector.from.getTime() : 0;
                     long till = selector.till != null ? selector.till.getTime() : System.currentTimeMillis();
                     StringBuilder sb = new StringBuilder("Created:[");
@@ -658,22 +660,24 @@ public class CDatabase {
                     sb.append(')');
                     query = sb.toString();
                 }
-                //QueryParser parser = new MultiFieldQueryParser(new String[]{"Any"}, analyzer); 
-                QueryParser parser = new QueryParser("Any", analyzer);
-                hits = searcher.search(parser.parse(query));
+                //QueryParser parser = new MultiFieldQueryParser(new String[]{"Any"}, analyzer);
+                QueryParser parser = new QueryParser(Version.LUCENE_29, "Any", analyzer);
+                int hitsLimit = limit > 0 ? limit : searcher.maxDoc();
+                hits = searcher.search(parser.parse(query), hitsLimit);
             } catch (IOException x) {
                 throw new IOError(x);
-            } catch (ParseException x) { 
+            } catch (ParseException x) {
                 throw new FullTextSearchQuerySyntaxError(x);
-            } 
-            result = new ArrayList<FullTextSearchResult>(limit > 0 ? limit : (limit = hits.length()));
-            Iterator<FullTextSearchResult> iterator = new FullTextSearchIterator(hits, storage, selector);
-            while (--limit >= 0 && iterator.hasNext()) { 
+            }
+            int fetch = hits.scoreDocs.length;
+            result = new ArrayList<FullTextSearchResult>(fetch);
+            Iterator<FullTextSearchResult> iterator = new FullTextSearchIterator(hits, searcher, storage, selector);
+            while (fetch-- > 0 && iterator.hasNext()) {
                 result.add(iterator.next());
             }
-        } finally { 
+        } finally {
             root.unlock();
-        } 
+        }
         FullTextSearchResult[] arr = result.toArray(new FullTextSearchResult[result.size()]);
         if (order != VersionSortOrder.NONE) { 
             final int delta = order.delta;
@@ -705,7 +709,7 @@ public class CDatabase {
                     indexReader.close();
                     indexReader = null;
                 }
-                indexWriter = new IndexWriter(dir, analyzer, true);
+                indexWriter = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
                 for (TableDescriptor table : root.tables) {
                     for (CVersionHistory<?> vh : table) {
                         for (CVersion v : vh) { 
@@ -801,7 +805,11 @@ public class CDatabase {
      * Get collection all of field names 
      */
     public Collection<String> getAllFullTextSearchanbleFieldNames() throws Exception {
-       return getIndexReader().getFieldNames(IndexReader.FieldOption.INDEXED);
+       Collection<String> names = new ArrayList<String>();
+       for (Object o : getIndexReader().getFieldNames(IndexReader.FieldOption.INDEXED)) {
+           names.add((String)o);
+       }
+       return names;
     }
 
     /**
@@ -834,16 +842,16 @@ public class CDatabase {
         } else { 
             File file = new File(path);
             create = !file.exists();
-            try { 
-                dir = FSDirectory.getDirectory(path);
+            try {
+                dir = FSDirectory.open(new File(path));
             } catch (IOException x) {
                 throw new IOError(x);
             }
         }
         dir.setLockFactory(NoLockFactory.getNoLockFactory());
-        analyzer = new StandardAnalyzer();
-        try { 
-            indexWriter = new IndexWriter(dir, analyzer, create);
+        analyzer = new StandardAnalyzer(Version.LUCENE_29);
+        try {
+            indexWriter = new IndexWriter(dir, analyzer, create, IndexWriter.MaxFieldLength.UNLIMITED);
         } catch (IOException x) {
             throw new IOError(x);
         }
@@ -904,7 +912,7 @@ public class CDatabase {
                 indexReader.close();
                 indexReader = null;
             }
-            indexWriter = new IndexWriter(dir, analyzer, false);
+            indexWriter = new IndexWriter(dir, analyzer, false, IndexWriter.MaxFieldLength.UNLIMITED);
         }
         return indexWriter;
     }
@@ -916,7 +924,7 @@ public class CDatabase {
                 indexWriter.close();
                 indexWriter = null;
             }
-            indexReader = IndexReader.open(dir);
+            indexReader = IndexReader.open(dir, true);
         }
         return indexReader;
     }

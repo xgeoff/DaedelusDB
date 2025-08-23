@@ -3,28 +3,33 @@ package org.garret.perst.continuous;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.io.IOException;
-import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.garret.perst.*;
 
 class FullTextSearchIterator implements Iterator<FullTextSearchResult>
 { 
-    public FullTextSearchIterator(Hits hits, Storage storage, VersionSelector selector) 
+    public FullTextSearchIterator(TopDocs hits, IndexSearcher searcher, Storage storage, VersionSelector selector)
     {
-        this.hits = hits;
+        this.scoreDocs = hits.scoreDocs;
+        this.searcher = searcher;
         this.selector = selector;
         this.storage = storage;
         TransactionContext ctx = CDatabase.getTransactionContext();
-        transId = ctx != null ? ctx.transId : TransactionContext.IMPLICIT_TRANSACTION_ID; 
+        transId = ctx != null ? ctx.transId : TransactionContext.IMPLICIT_TRANSACTION_ID;
     }
     
     public boolean hasNext() 
     { 
         if (current == null) { 
             try { 
-                while (i < hits.length()) { 
-                    Document doc = hits.doc(i++);
+                while (i < scoreDocs.length) {
+                    Document doc = searcher.doc(scoreDocs[i].doc);
+                    float score = scoreDocs[i].score;
+                    i++;
                     Field f = doc.getField("Oid");
                     if (f == null) { 
                         continue;
@@ -57,7 +62,7 @@ class FullTextSearchIterator implements Iterator<FullTextSearchResult>
                         }
                         continue;
                     }
-                    current = new FullTextSearchResult(v, hits.score(i-1));
+                    current = new FullTextSearchResult(v, score);
                     break;
                 }
             } catch (IOException x) { 
@@ -81,7 +86,8 @@ class FullTextSearchIterator implements Iterator<FullTextSearchResult>
         throw new UnsupportedOperationException();
     }
 
-    private Hits hits;
+    private ScoreDoc[] scoreDocs;
+    private IndexSearcher searcher;
     private Storage storage;
     private VersionSelector selector;
     private long transId;
