@@ -1,6 +1,7 @@
 package org.garret.perst.impl;
 
 import java.util.*;
+import org.garret.perst.*;
 
 /**
  * This class store transaction context associated with thread.
@@ -9,8 +10,8 @@ import java.util.*;
  */
 public class ThreadTransactionContext { 
     int             nested;
-    IdentityHashMap locked = new IdentityHashMap();
-    ArrayList       modified = new ArrayList();
-    ArrayList       deleted = new ArrayList();
+    IdentityHashMap<IResource,IResource> locked = new IdentityHashMap<IResource,IResource>();
+    ArrayList<IPersistent>       modified = new ArrayList<IPersistent>();
+    ArrayList<IPersistent>       deleted = new ArrayList<IPersistent>();
 }
 

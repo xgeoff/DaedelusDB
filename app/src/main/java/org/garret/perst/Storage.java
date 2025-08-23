@@ -1199,7 +1199,7 @@ public interface Storage {
 
     public void loadObject(Object obj);
 
-    public boolean lockObject(Object obj);
+    public boolean lockObject(IResource obj);
 
     public void throwObject(Object obj);
 
