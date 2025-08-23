@@ -23,7 +23,7 @@ public class GraphDatabase {
     }
 
     public GraphNode createNode(String id, String label) {
-        GraphNode node = new GraphNode(id, label);
+        GraphNode node = new GraphNode(db, id, label);
         ((Root) db.getRoot()).nodeIndex.put(node);  // only pass the object
         return node;
     }
@@ -54,7 +54,7 @@ public class GraphDatabase {
     protected GraphNode getOrCreateNode(String id) {
         GraphNode node = getNode(id);
         if (node == null) {
-            node = new GraphNode(id, null);
+            node = new GraphNode(db, id, null);
             ((Root) db.getRoot()).nodeIndex.put(node);
         }
         return node;
