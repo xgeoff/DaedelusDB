@@ -16,14 +16,15 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
     
     ThickIndex() {}
     
+    @SuppressWarnings("unchecked")
     private final T getFromRelation(Object s) {
-        if (s == null) { 
+        if (s == null) {
             return null;
         }
-        if (s instanceof Relation) { 
-            Relation r = (Relation)s;
-            if (r.size() == 1) { 
-                return (T)r.get(0);
+        if (s instanceof Relation<?,?>) {
+            Relation<T,?> r = (Relation<T,?>)s;
+            if (r.size() == 1) {
+                return r.get(0);
             }
         }
         throw new StorageError(StorageError.KEY_NOT_UNIQUE);
@@ -37,12 +38,14 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
         return getFromRelation(index.get(key));
     }
 
-    public ArrayList<T> getList(Key from, Key till) { 
-        return extendList(index.getList(from, till));
+    @SuppressWarnings("unchecked")
+    public ArrayList<T> getList(Key from, Key till) {
+        return extendList((ArrayList<? extends Collection<T>>)(ArrayList<?>)index.getList(from, till));
     }
 
-    public ArrayList<T> getList(Object from, Object till) { 
-        return extendList(index.getList(from, till));
+    @SuppressWarnings("unchecked")
+    public ArrayList<T> getList(Object from, Object till) {
+        return extendList((ArrayList<? extends Collection<T>>)(ArrayList<?>)index.getList(from, till));
     }
    
     public Object[] get(Key from, Key till) {
@@ -53,19 +56,20 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
         return extend(index.get(from, till));
     }
      
-    private ArrayList<T> extendList(ArrayList s) { 
+    private ArrayList<T> extendList(ArrayList<? extends Collection<T>> s) {
         ArrayList<T> list = new ArrayList<T>();
-        for (int i = 0, n = s.size(); i < n; i++) { 
-            list.addAll((Collection<T>)s.get(i));
+        for (Collection<T> c : s) {
+            list.addAll(c);
         }
         return list;
     }
 
 
-    protected Object[] extend(Object[] s) { 
-        ArrayList list = new ArrayList();
-        for (int i = 0; i < s.length; i++) { 
-            list.addAll((Collection)s[i]);
+    @SuppressWarnings("unchecked")
+    protected Object[] extend(Object[] s) {
+        ArrayList<T> list = new ArrayList<T>();
+        for (Object obj : s) {
+            list.addAll((Collection<T>)obj);
         }
         return list.toArray();
     }
@@ -78,16 +82,18 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
         return extend(index.getPrefix(prefix));
     }
     
-    public ArrayList<T> getPrefixList(String prefix) { 
-        return extendList(index.getPrefixList(prefix));
+    @SuppressWarnings("unchecked")
+    public ArrayList<T> getPrefixList(String prefix) {
+        return extendList((ArrayList<? extends Collection<T>>)(ArrayList<?>)index.getPrefixList(prefix));
     }
     
     public Object[] prefixSearch(String word) { 
         return extend(index.prefixSearch(word));
     }
            
-    public ArrayList<T> prefixSearchList(String word) { 
-        return extendList(index.prefixSearchList(word));
+    @SuppressWarnings("unchecked")
+    public ArrayList<T> prefixSearchList(String word) {
+        return extendList((ArrayList<? extends Collection<T>>)(ArrayList<?>)index.prefixSearchList(word));
     }
            
     public int size() { 
@@ -107,9 +113,10 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
         return extend(index.toArray());
     }
         
-    public <E> E[] toArray(E[] arr) { 
+    @SuppressWarnings("unchecked")
+    public <E> E[] toArray(E[] arr) {
         ArrayList<E> list = new ArrayList<E>();
-        for (Object c : index) { 
+        for (Object c : index) {
             list.addAll((Collection<E>)c);
         }
         return list.toArray(arr);
