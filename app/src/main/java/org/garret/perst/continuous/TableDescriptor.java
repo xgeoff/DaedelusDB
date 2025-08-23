@@ -302,9 +302,9 @@ class TableDescriptor extends Persistent implements Iterable<CVersionHistory>
             for (Field f : cloneableFields) {             
                 Object o = f.get(v);
                 if (o != null) { 
-                    if (o instanceof LinkImpl) { 
-                        o = new LinkImpl((StorageImpl)getStorage(), (Link)o, v);
-                    } else if (o instanceof ICloneable[]) { 
+                    if (o instanceof LinkImpl) {
+                        o = new LinkImpl<Object>((StorageImpl)getStorage(), (Link)o, v);
+                    } else if (o instanceof ICloneable[]) {
                         ICloneable[] arr = (ICloneable[])((Object[])o).clone();
                         for (int i = 0; i < arr.length; i++) { 
                             arr[i] = (ICloneable)arr[i].clone();
