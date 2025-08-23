@@ -8,7 +8,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
     int       type;
     int       nElems;
     boolean   unique;
-    BtreePage root;
+    BtreePage<T> root;
 
     transient int updateCounter;
 
@@ -25,22 +25,23 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
     }
 
-    static abstract class BtreePage extends Persistent { 
+    static abstract class BtreePage<T> extends Persistent {
         int  nItems;
-        Link items;
+        Link<Object> items;
 
         static final int BTREE_PAGE_SIZE = Page.pageSize - ObjectHeader.sizeof - 4*3;
 
-        abstract Object    getData();
-        abstract Object    getKeyValue(int i);
-        abstract Key       getKey(int i);
-        abstract int       compare(Key key, int i);            
-        abstract void      insert(BtreeKey key, int i);
-        abstract BtreePage clonePage();
+        abstract Object       getData();
+        abstract Object       getKeyValue(int i);
+        abstract Key          getKey(int i);
+        abstract int          compare(Key key, int i);
+        abstract void         insert(BtreeKey key, int i);
+        abstract BtreePage<T> clonePage();
         
         void clearKeyValue(int i) {}
 
-        boolean find(Key firstKey, Key lastKey, int height, ArrayList result)
+        @SuppressWarnings("unchecked")
+        boolean find(Key firstKey, Key lastKey, int height, ArrayList<T> result)
         {
             int l = 0, n = nItems, r = n;
             int oid;
@@ -62,13 +63,13 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
                         if (-compare(lastKey, l) >= lastKey.inclusion) {
                             return false;
                         }
-                        result.add(items.get(l));
+                        result.add((T)items.get(l));
                         l += 1;
                     }
                     return true;
                 } else {
                     do {
-                        if (!((BtreePage)items.get(l)).find(firstKey, lastKey, height, result)) {
+                        if (!((BtreePage<T>)items.get(l)).find(firstKey, lastKey, height, result)) {
                             return false;
                         }
                         if (l == n) {
@@ -80,12 +81,12 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             } 
             if (height == 0) { 
                 while (l < n) { 
-                    result.add(items.get(l));
+                    result.add((T)items.get(l));
                     l += 1;
                 }
             } else { 
                 do {
-                    if (!((BtreePage)items.get(l)).find(firstKey, lastKey, height, result)) {
+                    if (!((BtreePage<T>)items.get(l)).find(firstKey, lastKey, height, result)) {
                         return false;
                     }
                 } while (++l <= n);
@@ -93,18 +94,18 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return true;
         }
 
-        static void memcpyData(BtreePage dst_pg, int dst_idx, BtreePage src_pg, int src_idx, int len) 
-        { 
+        static <V> void memcpyData(BtreePage<V> dst_pg, int dst_idx, BtreePage<V> src_pg, int src_idx, int len)
+        {
             System.arraycopy(src_pg.getData(), src_idx, dst_pg.getData(), dst_idx, len);
         }
 
-        static void memcpyItems(BtreePage dst_pg, int dst_idx, BtreePage src_pg, int src_idx, int len) 
-        { 
-            System.arraycopy(src_pg.items.toRawArray(), src_idx, dst_pg.items.toRawArray(), dst_idx, len);            
+        static <V> void memcpyItems(BtreePage<V> dst_pg, int dst_idx, BtreePage<V> src_pg, int src_idx, int len)
+        {
+            System.arraycopy(src_pg.items.toRawArray(), src_idx, dst_pg.items.toRawArray(), dst_idx, len);
         }
 
-        static void memcpy(BtreePage dst_pg, int dst_idx, BtreePage src_pg, int src_idx, int len) 
-        { 
+        static <V> void memcpy(BtreePage<V> dst_pg, int dst_idx, BtreePage<V> src_pg, int src_idx, int len)
+        {
             memcpyData(dst_pg, dst_idx, src_pg, src_idx, len);
             memcpyItems(dst_pg, dst_idx, src_pg, src_idx, len);
         }
@@ -115,6 +116,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             }
         }
 
+        @SuppressWarnings("unchecked")
         int insert(BtreeKey ins, int height, boolean unique, boolean overwrite)
         {
             int result;
@@ -131,7 +133,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             Assert.that(l == r);
             /* insert before e[r] */
             if (--height != 0) {
-                result = ((BtreePage)items.get(r)).insert(ins, height, unique, overwrite);
+                result = ((BtreePage<T>)items.get(r)).insert(ins, height, unique, overwrite);
                 Assert.that(result != op_not_found);
                 if (result != op_overflow) {
                     return result;
@@ -156,7 +158,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
                 nItems += 1;
                 return op_done;
             } else { /* page is full then divide page */
-                BtreePage b = clonePage();
+                BtreePage<T> b = clonePage();
                 Assert.that(n == max);
                 int m = (max+1)/2;
                 if (r < m) {
@@ -185,14 +187,15 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             }
         }
 
+        @SuppressWarnings("unchecked")
         int handlePageUnderflow(int r, BtreeKey rem, int height)
         {
-            BtreePage a = (BtreePage)items.get(r);
+            BtreePage<T> a = (BtreePage<T>)items.get(r);
             a.modify();
             modify();
             int an = a.nItems;
             if (r < nItems) { // exists greater page
-                BtreePage b = (BtreePage)items.get(r+1);
+                BtreePage<T> b = (BtreePage<T>)items.get(r+1);
                 int bn = b.nItems; 
                 Assert.that(bn >= an);
                 if (height != 1) { 
@@ -225,7 +228,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
                     return nItems < items.size()/3 ? op_underflow : op_done;
                 }
             } else { // page b is before a
-                BtreePage b = (BtreePage)items.get(r-1);
+                BtreePage<T> b = (BtreePage<T>)items.get(r-1);
                 int bn = b.nItems; 
                 Assert.that(bn >= an);
                 if (height != 1) { 
@@ -265,6 +268,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             }
         }
    
+        @SuppressWarnings("unchecked")
         int remove(BtreeKey rem, int height)
         {
             int i, n = nItems, l = 0, r = n;
@@ -297,7 +301,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
                 return op_not_found;
             }
             do { 
-                switch (((BtreePage)items.get(r)).remove(rem, height)) {
+                switch (((BtreePage<T>)items.get(r)).remove(rem, height)) {
                 case op_underflow: 
                     return handlePageUnderflow(r, rem, height);
                 case op_done:
@@ -308,23 +312,25 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return op_not_found;
         }
         
+        @SuppressWarnings("unchecked")
         void purge(int height)
         {
             if (--height != 0) { 
                 int n = nItems;
                 do { 
-                    ((BtreePage)items.get(n)).purge(height);
+                    ((BtreePage<T>)items.get(n)).purge(height);
                 } while (--n >= 0);
             }
             super.deallocate();
         }
 
+        @SuppressWarnings("unchecked")
         int traverseForward(int height, Object[] result, int pos)
         {
             int i, n = nItems;
             if (--height != 0) {
                 for (i = 0; i <= n; i++) { 
-                    pos = ((BtreePage)items.get(i)).traverseForward(height, result, pos);
+                    pos = ((BtreePage<T>)items.get(i)).traverseForward(height, result, pos);
                 }
             } else { 
                 for (i = 0; i < n; i++) { 
@@ -334,10 +340,11 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return pos;
         }
 
-        BtreePage(Storage s, int n) 
-        { 
+        @SuppressWarnings("unchecked")
+        BtreePage(Storage s, int n)
+        {
             super(s);
-            items = s.createLink(n);
+            items = (Link<Object>)s.createLink(n);
             items.setSize(n);
         }
 
@@ -345,7 +352,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
     }
 
 
-    static class BtreePageOfByte extends BtreePage { 
+    static class BtreePageOfByte<T> extends BtreePage<T> {
         byte[] data; 
 
         static final int MAX_ITEMS = BTREE_PAGE_SIZE / (4 + 1);
@@ -362,8 +369,8 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return new Key(data[i]);
         }
 
-        BtreePage clonePage() { 
-            return new BtreePageOfByte(getStorage());
+        BtreePage<T> clonePage() {
+            return new BtreePageOfByte<T>(getStorage());
         }
 
         int compare(Key key, int i) {
@@ -383,7 +390,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
         BtreePageOfByte() {}
     }
 
-    static class BtreePageOfBoolean extends BtreePageOfByte { 
+    static class BtreePageOfBoolean<T> extends BtreePageOfByte<T> {
         Key getKey(int i) { 
             return new Key(data[i] != 0);
         }
@@ -392,18 +399,18 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return Boolean.valueOf(data[i] != 0);
         }
 
-        BtreePage clonePage() { 
-            return new BtreePageOfBoolean(getStorage());
+        BtreePage<T> clonePage() {
+            return new BtreePageOfBoolean<T>(getStorage());
         }
 
         BtreePageOfBoolean() {}
-        
+
         BtreePageOfBoolean(Storage s) {
             super(s);
-        }        
+        }
     }
 
-    static class BtreePageOfShort extends BtreePage { 
+    static class BtreePageOfShort<T> extends BtreePage<T> {
         short[] data; 
 
         static final int MAX_ITEMS = BTREE_PAGE_SIZE / (4 + 2);
@@ -420,8 +427,8 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return Short.valueOf(data[i]);
         }
 
-        BtreePage clonePage() { 
-            return new BtreePageOfShort(getStorage());
+        BtreePage<T> clonePage() {
+            return new BtreePageOfShort<T>(getStorage());
         }
 
         int compare(Key key, int i) {
@@ -441,7 +448,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
         BtreePageOfShort() {}
     }
 
-    static class BtreePageOfChar extends BtreePage { 
+    static class BtreePageOfChar<T> extends BtreePage<T> {
         char[] data; 
 
         static final int MAX_ITEMS = BTREE_PAGE_SIZE / (4 + 2);
@@ -458,8 +465,8 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return Character.valueOf(data[i]);
         }
 
-        BtreePage clonePage() { 
-            return new BtreePageOfChar(getStorage());
+        BtreePage<T> clonePage() {
+            return new BtreePageOfChar<T>(getStorage());
         }
 
         int compare(Key key, int i) {
@@ -479,7 +486,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
         BtreePageOfChar() {}
     }
 
-    static class BtreePageOfInt extends BtreePage { 
+    static class BtreePageOfInt<T> extends BtreePage<T> {
         int[] data; 
 
         static final int MAX_ITEMS = BTREE_PAGE_SIZE / (4 + 4);
@@ -496,8 +503,8 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return Integer.valueOf(data[i]);
         }
 
-        BtreePage clonePage() { 
-            return new BtreePageOfInt(getStorage());
+        BtreePage<T> clonePage() {
+            return new BtreePageOfInt<T>(getStorage());
         }
 
         int compare(Key key, int i) {
@@ -517,7 +524,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
         BtreePageOfInt() {}
     }
 
-    static class BtreePageOfLong extends BtreePage { 
+    static class BtreePageOfLong<T> extends BtreePage<T> {
         long[] data; 
 
         static final int MAX_ITEMS = BTREE_PAGE_SIZE / (4 + 8);
@@ -534,8 +541,8 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return Long.valueOf(data[i]);
         }
 
-        BtreePage clonePage() { 
-            return new BtreePageOfLong(getStorage());
+        BtreePage<T> clonePage() {
+            return new BtreePageOfLong<T>(getStorage());
         }
 
         int compare(Key key, int i) {
@@ -555,7 +562,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
         BtreePageOfLong() {}
     }
 
-    static class BtreePageOfFloat extends BtreePage { 
+    static class BtreePageOfFloat<T> extends BtreePage<T> {
         float[] data; 
 
         static final int MAX_ITEMS = BTREE_PAGE_SIZE / (4 + 4);
@@ -572,8 +579,8 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return Float.valueOf(data[i]);
         }
 
-        BtreePage clonePage() { 
-            return new BtreePageOfFloat(getStorage());
+        BtreePage<T> clonePage() {
+            return new BtreePageOfFloat<T>(getStorage());
         }
 
         int compare(Key key, int i) {
@@ -593,7 +600,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
         BtreePageOfFloat() {}
     }
 
-    static class BtreePageOfDouble extends BtreePage { 
+    static class BtreePageOfDouble<T> extends BtreePage<T> {
         double[] data; 
 
         static final int MAX_ITEMS = BTREE_PAGE_SIZE / (4 + 8);
@@ -610,8 +617,8 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return Double.valueOf(data[i]);
         }
 
-        BtreePage clonePage() { 
-            return new BtreePageOfDouble(getStorage());
+        BtreePage<T> clonePage() {
+            return new BtreePageOfDouble<T>(getStorage());
         }
 
         int compare(Key key, int i) {
@@ -632,8 +639,8 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
     }
 
 
-    static class BtreePageOfObject extends BtreePage { 
-        Link data; 
+    static class BtreePageOfObject<T> extends BtreePage<T> {
+        Link<Object> data;
 
         static final int MAX_ITEMS = BTREE_PAGE_SIZE / (4 + 4);
             
@@ -649,8 +656,8 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return data.get(i);
         }
 
-        BtreePage clonePage() { 
-            return new BtreePageOfObject(getStorage());
+        BtreePage<T> clonePage() {
+            return new BtreePageOfObject<T>(getStorage());
         }
 
         int compare(Key key, int i) {
@@ -664,16 +671,17 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             data.setObject(i, key.key.oval);
         }
 
+        @SuppressWarnings("unchecked")
         BtreePageOfObject(Storage s) {
             super(s, MAX_ITEMS);
-            data = s.createLink(MAX_ITEMS);
+            data = (Link<Object>)s.createLink(MAX_ITEMS);
             data.setSize(MAX_ITEMS);
         }
 
         BtreePageOfObject() {}
     }
 
-    static class BtreePageOfString extends BtreePage { 
+    static class BtreePageOfString<T> extends BtreePage<T> {
         String[] data; 
 
         static final int MAX_ITEMS = 100;
@@ -694,8 +702,8 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             data[i] = null;
         }
         
-        BtreePage clonePage() { 
-            return new BtreePageOfString(getStorage());
+        BtreePage<T> clonePage() {
+            return new BtreePageOfString<T>(getStorage());
         }
 
         int compare(Key key, int i) {
@@ -715,7 +723,8 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             }
         }
 
-        boolean prefixSearch(String key, int height, ArrayList result)
+        @SuppressWarnings("unchecked")
+        boolean prefixSearch(String key, int height, ArrayList<T> result)
         {
             int l = 0, n = nItems, r = n;
             height -= 1;
@@ -733,12 +742,12 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
                     if (key.compareTo(data[l]) < 0) { 
                         return false;
                     }
-                    result.add(items.get(l));
+                    result.add((T)items.get(l));
                     l += 1;
                 }
             } else { 
                 do {
-                    if (!((BtreePageOfString)items.get(l)).prefixSearch(key, height, result)) {
+                    if (!((BtreePageOfString<T>)items.get(l)).prefixSearch(key, height, result)) {
                         return false;
                     }
                     if (l == n) { 
@@ -759,7 +768,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
         BtreePageOfString() {}
     }
 
-    static class BtreePageOfValue extends BtreePage { 
+    static class BtreePageOfValue<T> extends BtreePage<T> {
         Object[] data; 
 
         static final int MAX_ITEMS = 100;
@@ -780,12 +789,13 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             data[i] = null;
         }
         
-        BtreePage clonePage() { 
-            return new BtreePageOfValue(getStorage());
+        BtreePage<T> clonePage() {
+            return new BtreePageOfValue<T>(getStorage());
         }
 
+        @SuppressWarnings("unchecked")
         int compare(Key key, int i) {
-            return ((Comparable)key.oval).compareTo(data[i]);
+            return ((Comparable<Object>)key.oval).compareTo(data[i]);
         }
 
         void insert(BtreeKey key, int i) { 
@@ -890,15 +900,15 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
 
     public T get(Key key) { 
         key = checkKey(key);
-        if (root != null) { 
-            ArrayList list = new ArrayList();
+        if (root != null) {
+            ArrayList<T> list = new ArrayList<T>();
             root.find(key, key, height, list);
-            if (list.size() > 1) { 
+            if (list.size() > 1) {
                 throw new StorageError(StorageError.KEY_NOT_UNIQUE);
-            } else if (list.size() == 0) { 
+            } else if (list.size() == 0) {
                 return null;
-            } else { 
-                return (T)list.get(0);
+            } else {
+                return list.get(0);
             }
         }
         return null;
@@ -910,7 +920,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
         ArrayList<T> list = new ArrayList<T>();
         if (root != null) { 
-            ((BtreePageOfString)root).prefixSearch(key, height, list);
+            ((BtreePageOfString<T>)root).prefixSearch(key, height, list);
         }
         return list;
     }
@@ -951,42 +961,42 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
 
     final void allocateRootPage(BtreeKey ins) { 
         Storage s = getStorage();
-        BtreePage newRoot = null;
+        BtreePage<T> newRoot = null;
         switch (type) { 
         case ClassDescriptor.tpByte:
-            newRoot = new BtreePageOfByte(s);
+            newRoot = new BtreePageOfByte<T>(s);
             break;
         case ClassDescriptor.tpShort:
-            newRoot = new BtreePageOfShort(s);
+            newRoot = new BtreePageOfShort<T>(s);
             break;
         case ClassDescriptor.tpChar:
-            newRoot = new BtreePageOfChar(s);
+            newRoot = new BtreePageOfChar<T>(s);
             break;
         case ClassDescriptor.tpBoolean:
-            newRoot = new BtreePageOfBoolean(s);
+            newRoot = new BtreePageOfBoolean<T>(s);
             break;
         case ClassDescriptor.tpInt:
         case ClassDescriptor.tpEnum:
-            newRoot = new BtreePageOfInt(s);
+            newRoot = new BtreePageOfInt<T>(s);
             break;
         case ClassDescriptor.tpLong:
         case ClassDescriptor.tpDate:
-            newRoot = new BtreePageOfLong(s);
+            newRoot = new BtreePageOfLong<T>(s);
             break;
         case ClassDescriptor.tpFloat:
-            newRoot = new BtreePageOfFloat(s);
+            newRoot = new BtreePageOfFloat<T>(s);
             break;
         case ClassDescriptor.tpDouble:
-            newRoot = new BtreePageOfDouble(s);
+            newRoot = new BtreePageOfDouble<T>(s);
             break;
         case ClassDescriptor.tpObject:
-            newRoot = new BtreePageOfObject(s);
+            newRoot = new BtreePageOfObject<T>(s);
             break;
         case ClassDescriptor.tpString:
-            newRoot = new BtreePageOfString(s);
+            newRoot = new BtreePageOfString<T>(s);
             break;
         case ClassDescriptor.tpValue:
-            newRoot = new BtreePageOfValue(s);
+            newRoot = new BtreePageOfValue<T>(s);
             break;
         default:
             Assert.failed("Invalid type");
@@ -997,6 +1007,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
         root = newRoot;
     }
 
+    @SuppressWarnings("unchecked")
     final T insert(Key key, T obj, boolean overwrite) {
         BtreeKey ins = new BtreeKey(checkKey(key), obj);
         if (root == null) { 
@@ -1037,8 +1048,9 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
     }
 
-    boolean removeIfExists(BtreeKey rem) 
-    {            
+    @SuppressWarnings("unchecked")
+    boolean removeIfExists(BtreeKey rem)
+    {
         if (root == null) {
             return false;
         }
@@ -1049,9 +1061,9 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
         nElems -= 1;
         if (result == op_underflow) { 
             if (root.nItems == 0) {                         
-                BtreePage newRoot = null;
-                if (height != 1) { 
-                    newRoot = (BtreePage)root.items.get(0);
+                BtreePage<T> newRoot = null;
+                if (height != 1) {
+                    newRoot = (BtreePage<T>)root.items.get(0);
                 }
                 root.deallocate();
                 root = newRoot;
@@ -1063,8 +1075,9 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
         return true;
     }
         
+    @SuppressWarnings("unchecked")
     public T remove(Key key) {
-        if (!unique) { 
+        if (!unique) {
             throw new StorageError(StorageError.KEY_NOT_UNIQUE);
         }
         BtreeKey rk = new BtreeKey(checkKey(key), null);
@@ -1128,8 +1141,9 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
         return arr;
     }
 
+    @SuppressWarnings("unchecked")
     public <E> E[] toArray(E[] arr) {
-        if (arr.length < nElems) { 
+        if (arr.length < nElems) {
             arr = (E[])Array.newInstance(arr.getClass().getComponentType(), nElems);
         }
         if (root != null) { 
@@ -1153,6 +1167,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return pg.getKeyValue(pos);
         }
 
+        @SuppressWarnings("unchecked")
         public T getValue() {
             return (T)pg.items.get(pos);
         }
@@ -1179,12 +1194,12 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
 	    return getKey() + "=" + getValue();
 	}
 
-        BtreeEntry(BtreePage pg, int pos) {
+        BtreeEntry(BtreePage<T> pg, int pos) {
             this.pg = pg;
             this.pos = pos;
         }
 
-        private BtreePage pg;
+        private BtreePage<T> pg;
         private int pos;
     }
 
@@ -1205,7 +1220,8 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             reset();
         }
 
-        void reset() { 
+        @SuppressWarnings("unchecked")
+        void reset() {
             int i, l, r;
             
             sp = 0;
@@ -1213,10 +1229,12 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             if (height == 0) { 
                 return;
             }
-            BtreePage page = root;
+            BtreePage<T> page = root;
             int h = height;
             
-            pageStack = new BtreePage[h];
+            @SuppressWarnings("unchecked")
+            BtreePage<T>[] stack = (BtreePage<T>[])new BtreePage[h];
+            pageStack = stack;
             posStack =  new int[h];
             
             if (order == ASCENT_ORDER) { 
@@ -1224,7 +1242,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
                     while (--h > 0) { 
                         posStack[sp] = 0;
                         pageStack[sp] = page;
-                        page = (BtreePage)page.items.get(0);
+                        page = (BtreePage<T>)page.items.get(0);
                         sp += 1;
                     }
                     posStack[sp] = 0;
@@ -1246,7 +1264,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
                         }
                         Assert.that(r == l); 
                         posStack[sp] = r;
-                        page = (BtreePage)page.items.get(r);
+                        page = (BtreePage<T>)page.items.get(r);
                         sp += 1;
                     }
                     pageStack[sp] = page;
@@ -1279,7 +1297,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
                     while (--h > 0) { 
                         pageStack[sp] = page;
                         posStack[sp] = page.nItems;
-                        page = (BtreePage)page.items.get(page.nItems);
+                        page = (BtreePage<T>)page.items.get(page.nItems);
                         sp += 1;
                     }
                     pageStack[sp] = page;
@@ -1299,7 +1317,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
                         }
                         Assert.that(r == l); 
                         posStack[sp] = r;
-                        page = (BtreePage)page.items.get(r);
+                        page = (BtreePage<T>)page.items.get(r);
                         sp += 1;
                     }
                     pageStack[sp] = page;
@@ -1341,12 +1359,13 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return sp != 0;
         }
 
+        @SuppressWarnings("unchecked")
         public E next() {
             if (!hasNext()) { 
                 throw new NoSuchElementException();
             }
             int pos = posStack[sp-1];   
-            BtreePage pg = pageStack[sp-1];
+            BtreePage<T> pg = pageStack[sp-1];
             currPos = pos;
             currPage = pg;
             E curr = (E)getCurrent(pg, pos);
@@ -1362,7 +1381,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
                 return 0;
             }
             int pos = posStack[sp-1];   
-            BtreePage pg = pageStack[sp-1];
+            BtreePage<T> pg = pageStack[sp-1];
             currPos = pos;
             currPage = pg;
             Object obj = pg.items.getRaw(pos);
@@ -1374,11 +1393,12 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             return oid;
         }
 
-        protected Object getCurrent(BtreePage pg, int pos) { 
+        protected Object getCurrent(BtreePage<T> pg, int pos) {
             return pg.items.get(pos);
         }
 
-        protected final void gotoNextItem(BtreePage pg, int pos)
+        @SuppressWarnings("unchecked")
+        protected final void gotoNextItem(BtreePage<T> pg, int pos)
         {
             if (order == ASCENT_ORDER) {                     
                 if (++pos == end) { 
@@ -1388,7 +1408,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
                         if (++pos <= pg.nItems) {
                             posStack[sp-1] = pos;
                             do { 
-                                pg = (BtreePage)pg.items.get(pos);
+                                pg = (BtreePage<T>)pg.items.get(pos);
                                 end = pg.nItems;
                                 pageStack[sp] = pg;
                                 posStack[sp] = pos = 0;
@@ -1410,7 +1430,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
                         if (--pos >= 0) {
                             posStack[sp-1] = pos;
                             do { 
-                                pg = (BtreePage)pg.items.get(pos);
+                                pg = (BtreePage<T>)pg.items.get(pos);
                                 pageStack[sp] = pg;
                                 posStack[sp] = pos = pg.nItems;
                             } while (++sp < pageStack.length);
@@ -1446,7 +1466,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
                     reset();
                     while (true) { 
                         int pos = posStack[sp-1];   
-                        BtreePage pg = pageStack[sp-1];
+                        BtreePage<T> pg = pageStack[sp-1];
                         if (!pg.items.getRaw(pos).equals(next)) { 
                             gotoNextItem(pg, pos);
                         } else { 
@@ -1470,7 +1490,7 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
                 currKey = new BtreeKey(currPage.getKey(currPos), currPage.items.getRaw(currPos));
                 if (sp != 0) { 
                     int pos = posStack[sp-1];   
-                    BtreePage pg = pageStack[sp-1];
+                    BtreePage<T> pg = pageStack[sp-1];
                     nextKey = pg.getKey(pos);
                     nextObj = pg.items.getRaw(pos);
                 }
@@ -1480,9 +1500,9 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             currPage = null;
         }
 
-        BtreePage[] pageStack;
+        BtreePage<T>[] pageStack;
         int[]       posStack;
-        BtreePage   currPage;
+        BtreePage<T>   currPage;
         int         currPos;
         int         sp;
         int         end;
@@ -1500,8 +1520,8 @@ class AltBtree<T> extends PersistentCollection<T> implements Index<T> {
             super(from, till, order);
         }
             
-        protected Object getCurrent(BtreePage pg, int pos) { 
-            return new BtreeEntry(pg, pos);
+        protected Object getCurrent(BtreePage<T> pg, int pos) {
+            return new BtreeEntry<T>(pg, pos);
         }
     }
 
