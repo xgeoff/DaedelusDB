@@ -2,7 +2,6 @@ package biz.digitalindustry.db.graph;
 
 
 import org.garret.perst.*;
-import org.garret.perst.PersistentLink
 import java.util.*;
 
 public class GraphNode extends Persistent {
@@ -12,8 +11,9 @@ public class GraphNode extends Persistent {
     public Link<GraphEdge> incoming;
 
     public GraphNode() {
-        outgoing = new PersistentLink<>();
-        incoming = new PersistentLink<>();
+        outgoing = storage.createLink();  // returns LinkImpl
+        incoming = storage.createLink();
+
     }
 
     public GraphNode(String id, String label) {
