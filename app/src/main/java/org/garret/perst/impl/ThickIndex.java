@@ -40,12 +40,12 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
 
     @SuppressWarnings("unchecked")
     public ArrayList<T> getList(Key from, Key till) {
-        return extendList((ArrayList<? extends Collection<T>>)(ArrayList<?>)index.getList(from, till));
+        return extendList((ArrayList<Collection<T>>)(ArrayList<?>)index.getList(from, till));
     }
 
     @SuppressWarnings("unchecked")
     public ArrayList<T> getList(Object from, Object till) {
-        return extendList((ArrayList<? extends Collection<T>>)(ArrayList<?>)index.getList(from, till));
+        return extendList((ArrayList<Collection<T>>)(ArrayList<?>)index.getList(from, till));
     }
    
     public Object[] get(Key from, Key till) {
@@ -56,9 +56,9 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
         return extend(index.get(from, till));
     }
      
-    private ArrayList<T> extendList(ArrayList<? extends Collection<T>> s) {
-        ArrayList<T> list = new ArrayList<T>();
-        for (Collection<T> c : s) {
+    private ArrayList<T> extendList(List<? extends Collection<T>> src) {
+        ArrayList<T> list = new ArrayList<>();
+        for (Collection<T> c : src) {
             list.addAll(c);
         }
         return list;
@@ -67,11 +67,11 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
 
     @SuppressWarnings("unchecked")
     protected Object[] extend(Object[] s) {
-        ArrayList<T> list = new ArrayList<T>();
-        for (Object obj : s) {
-            list.addAll((Collection<T>)obj);
+        ArrayList<Collection<T>> collections = new ArrayList<>(s.length);
+        for (Collection<T> c : (Collection<T>[])s) {
+            collections.add(c);
         }
-        return list.toArray();
+        return extendList(collections).toArray();
     }
 
     public T get(String key) {
@@ -84,7 +84,7 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
     
     @SuppressWarnings("unchecked")
     public ArrayList<T> getPrefixList(String prefix) {
-        return extendList((ArrayList<? extends Collection<T>>)(ArrayList<?>)index.getPrefixList(prefix));
+        return extendList((ArrayList<Collection<T>>)(ArrayList<?>)index.getPrefixList(prefix));
     }
     
     public Object[] prefixSearch(String word) { 
@@ -93,7 +93,7 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
            
     @SuppressWarnings("unchecked")
     public ArrayList<T> prefixSearchList(String word) {
-        return extendList((ArrayList<? extends Collection<T>>)(ArrayList<?>)index.prefixSearchList(word));
+        return extendList((ArrayList<Collection<T>>)(ArrayList<?>)index.prefixSearchList(word));
     }
            
     public int size() { 
@@ -122,7 +122,8 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
         return list.toArray(arr);
     }
 
-    static class ExtendIterator<E> extends IterableIterator<E> implements PersistentIterator {  
+    @SuppressWarnings("unchecked")
+    static class ExtendIterator<E> extends IterableIterator<E> implements PersistentIterator {
         public boolean hasNext() { 
             return inner != null;
         }
@@ -200,7 +201,8 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
         private E      value;
     }
 
-    static class ExtendEntryIterator<E> extends IterableIterator<Map.Entry<Object,E>> {  
+    @SuppressWarnings("unchecked")
+    static class ExtendEntryIterator<E> extends IterableIterator<Map.Entry<Object,E>> {
         public boolean hasNext() { 
             return inner != null;
         }
@@ -291,37 +293,38 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
         Object s = index.get(key);
         Storage storage = getStorage();
         int oid = storage.getOid(obj);
-        if (oid == 0) { 
+        if (oid == 0) {
             oid = storage.makePersistent(obj);
         }
-        if (s == null) { 
+        if (s == null) {
             Relation<T,ThickIndex> r = storage.<T,ThickIndex>createRelation(null);
             r.add(obj);
             index.put(key, r);
-        } else if (s instanceof Relation) { 
-            Relation rel = (Relation)s;
+        } else if (s instanceof Relation) {
+            @SuppressWarnings("unchecked") Relation<T,?> rel = (Relation<T,?>)s;
             if (rel.size() == BTREE_THRESHOLD) {
                 IPersistentSet<T> ps = storage.<T>createBag();
-                for (int i = 0; i < BTREE_THRESHOLD; i++) { 
-                    ps.add((T)rel.get(i));
+                for (int i = 0; i < BTREE_THRESHOLD; i++) {
+                    ps.add(rel.get(i));
                 }
                 Assert.that(ps.add(obj));
                 index.set(key, ps);
                 rel.deallocate();
-            } else { 
+            } else {
                 int l = 0, n = rel.size(), r = n;
-                while (l < r) { 
+                while (l < r) {
                     int m = (l + r) >>> 1;
-                    if (storage.getOid(rel.getRaw(m)) <= oid) { 
+                    if (storage.getOid(rel.getRaw(m)) <= oid) {
                         l = m + 1;
-                    } else { 
+                    } else {
                         r = m;
                     }
                 }
                 rel.insert(r, obj);
             }
-        } else { 
-            Assert.that(((IPersistentSet<T>)s).add(obj));
+        } else {
+            @SuppressWarnings("unchecked") IPersistentSet<T> ps = (IPersistentSet<T>)s;
+            Assert.that(ps.add(obj));
         }
         nElems += 1;
         modify();
@@ -332,23 +335,23 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
         Object s = index.get(key);
         Storage storage = getStorage();
         int oid = storage.getOid(obj);
-        if (oid == 0) { 
+        if (oid == 0) {
             oid = storage.makePersistent(obj);
         }
-        if (s == null) { 
+        if (s == null) {
             Relation<T,ThickIndex> r = storage.<T,ThickIndex>createRelation(null);
             r.add(obj);
             index.put(key, r);
             nElems += 1;
             modify();
             return null;
-        } else if (s instanceof Relation) { 
-            Relation r = (Relation)s;
+        } else if (s instanceof Relation) {
+            @SuppressWarnings("unchecked") Relation<T,?> r = (Relation<T,?>)s;
             if (r.size() == 1) {
-                Object prev = r.get(0);
+                T prev = r.get(0);
                 r.set(0, obj);
-                return (T)prev;
-            } 
+                return prev;
+            }
         }
         throw new StorageError(StorageError.KEY_NOT_UNIQUE);
     }
@@ -359,22 +362,22 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
     
     boolean removeIfExists(Key key, T obj) { 
         Object s = index.get(key);
-        if (s instanceof Relation) { 
-            Relation rel = (Relation)s;
+        if (s instanceof Relation) {
+            @SuppressWarnings("unchecked") Relation<T,?> rel = (Relation<T,?>)s;
             Storage storage = getStorage();
             int oid = storage.getOid(obj);
             int l = 0, n = rel.size(), r = n;
-            while (l < r) { 
+            while (l < r) {
                 int m = (l + r) >>> 1;
-                if (storage.getOid(rel.getRaw(m)) < oid) { 
+                if (storage.getOid(rel.getRaw(m)) < oid) {
                     l = m + 1;
-                } else { 
+                } else {
                     r = m;
                 }
             }
-            if (r < n && storage.getOid(rel.getRaw(r)) == oid) { 
+            if (r < n && storage.getOid(rel.getRaw(r)) == oid) {
                 rel.remove(r);
-                if (rel.size() == 0) { 
+                if (rel.size() == 0) {
                     index.remove(key, rel);
                     rel.deallocate();
                 }
@@ -382,13 +385,13 @@ class ThickIndex<T> extends PersistentCollection<T> implements Index<T> {
                 modify();
                 return true;
             }
-        } else if (s instanceof IPersistentSet) { 
-            IPersistentSet ps = (IPersistentSet)s;
-            if (ps.remove(obj)) { 
-                if (ps.size() == 0) { 
+        } else if (s instanceof IPersistentSet) {
+            @SuppressWarnings("unchecked") IPersistentSet<T> ps = (IPersistentSet<T>)s;
+            if (ps.remove(obj)) {
+                if (ps.size() == 0) {
                     index.remove(key, ps);
                     ps.deallocate();
-                }                    
+                }
                 nElems -= 1;
                 modify();
                 return true;
