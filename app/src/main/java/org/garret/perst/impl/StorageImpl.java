@@ -3728,7 +3728,7 @@ public class StorageImpl implements Storage {
                             arr[j] = new PersistentStub(this, elemOid);
                         }
                     }
-                    val = new LinkImpl(this, arr, parent);
+                    val = new LinkImpl<Object>(this, arr, parent);
                     break;
                 }
             case ClassDescriptor.tpArrayOfByte:
@@ -4360,7 +4360,7 @@ public class StorageImpl implements Storage {
                                 arr[j] = new PersistentStub(this, elemOid);
                             }
                         }
-                        provider.set(f, obj, new LinkImpl(this, arr, parent));
+                        provider.set(f, obj, new LinkImpl<Object>(this, arr, parent));
                     }
                 }
             }
