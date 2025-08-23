@@ -1184,7 +1184,7 @@ public interface Storage {
      * @param enabled Whether recursive loading is enabled or disabled for this class
      * @return previous status of recursive loading policy for the specified class
      */
-    public boolean setRecursiveLoading(Class type, boolean enabled);
+    public boolean setRecursiveLoading(Class<?> type, boolean enabled);
 
 
     // Internal methods
