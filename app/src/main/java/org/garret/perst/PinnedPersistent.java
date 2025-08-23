@@ -14,8 +14,14 @@ import org.garret.perst.impl.StorageImpl;
  */
 public class PinnedPersistent implements IPersistent, ICloneable 
 { 
+    /**
+     * Load the object's state from storage.
+     * This call blocks if another thread currently holds a write lock
+     * on the object.
+     */
     public synchronized void load() {
-        if (oid != 0 && (state & RAW) != 0) { 
+        if (oid != 0 && (state & RAW) != 0) {
+            storage.checkReadLock(getOid());
             storage.loadObject(this);
         }
     }
