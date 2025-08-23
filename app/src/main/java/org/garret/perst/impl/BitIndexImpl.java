@@ -129,7 +129,7 @@ class BitIndexImpl<T> extends Btree<T> implements BitIndex<T>
             if (oid == 0) { 
                 throw new NoSuchElementException();
             }
-            return (E)((StorageImpl)getStorage()).lookupObject(oid, null);
+            return ((StorageImpl)getStorage()).lookupObject(oid, null);
         }
 
         public int nextOid() 

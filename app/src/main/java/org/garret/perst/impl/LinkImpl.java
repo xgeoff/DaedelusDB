@@ -590,13 +590,14 @@ public class LinkImpl<T> implements EmbeddedLink<T>, ICloneable
         return listIterator(0);
     }
 
-    private final T loadElem(int i) 
+    private final T loadElem(int i)
     {
-        Object elem = arr[i];
-        if (elem != null && db.isRaw(elem)) { 
+        T elem = (T)arr[i];
+        if (elem != null && db.isRaw(elem)) {
             elem = db.lookupObject(db.getOid(elem), null);
+            arr[i] = elem;
         }
-        return (T)elem;
+        return elem;
     }
 
     public IterableIterator<T> select(Class cls, String predicate) { 

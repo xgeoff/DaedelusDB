@@ -1303,7 +1303,7 @@ public class StorageImpl implements Storage {
             throw new StorageError(StorageError.STORAGE_NOT_OPENED);
         }
         int rootOid = header.root[1-currIndex].rootObject;
-        return (rootOid == 0) ? null : (T)lookupObject(rootOid, null);
+        return (rootOid == 0) ? null : lookupObject(rootOid, null);
     }
 
     public synchronized void setRoot(Object root) {
@@ -3396,13 +3396,13 @@ public class StorageImpl implements Storage {
         }
     }
 
-    final synchronized Object lookupObject(int oid, Class cls) {
+    final synchronized <T> T lookupObject(int oid, Class<T> cls) {
         checkReadLock(oid);
         Object obj = objectCache.get(oid);
         if (obj == null || isRaw(obj)) {
             obj = loadStub(oid, obj, cls);
         }
-        return obj;
+        return (T)obj;
     }
 
     /**
@@ -3430,7 +3430,7 @@ public class StorageImpl implements Storage {
     }
 
     final ClassDescriptor findClassDescriptor(int oid) {
-        return (ClassDescriptor)lookupObject(oid, ClassDescriptor.class);
+        return lookupObject(oid, ClassDescriptor.class);
     }
 
 
