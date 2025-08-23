@@ -3402,6 +3402,12 @@ public class StorageImpl implements Storage {
         if (obj == null || isRaw(obj)) {
             obj = loadStub(oid, obj, cls);
         }
+        if (cls != null) {
+            if (!cls.isInstance(obj)) {
+                throw new ClassCastException();
+            }
+            return cls.cast(obj);
+        }
         return (T)obj;
     }
 
