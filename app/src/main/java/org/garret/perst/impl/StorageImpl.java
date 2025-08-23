@@ -3867,7 +3867,8 @@ public class StorageImpl implements Storage {
                     if (desc.isCollection) {
                         int len = Bytes.unpack4(body, offs);
                         obj.offs = offs + 4;
-                        Collection collection = (Collection)val;
+                        @SuppressWarnings("unchecked")
+                        Collection<Object> collection = (Collection<Object>)val;
                         for (int i = 0; i < len; i++) {
                             collection.add(unswizzle(obj, Object.class, parent, recursiveLoading));
                         }
@@ -3875,7 +3876,8 @@ public class StorageImpl implements Storage {
                     } else if (desc.isMap) {
                         int len = Bytes.unpack4(body, offs);
                         obj.offs = offs + 4;
-                        Map map = (Map)val;
+                        @SuppressWarnings("unchecked")
+                        Map<Object,Object> map = (Map<Object,Object>)val;
                         for (int i = 0; i < len; i++) {
                             Object key = unswizzle(obj, Object.class, parent, recursiveLoading);
                             Object value = unswizzle(obj, Object.class, parent, recursiveLoading);
