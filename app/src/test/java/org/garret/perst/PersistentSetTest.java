@@ -14,6 +14,7 @@ import org.junit.*;
 import static org.junit.Assert.*;
 
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  * These tests verifies an implementation of the <code>PersistentSet</code> interface. <br />
@@ -35,13 +36,13 @@ import java.util.Iterator;
  */
 public class PersistentSetTest {
     Storage storage;
-    IPersistentSet persistentSet;
+    Set<Stored> persistentSet;
 
     @Before
     public void setUp() throws Exception {
         storage = StorageFactory.getInstance().createStorage();
         storage.open(new NullFile(), Storage.INFINITE_PAGE_POOL);
-        persistentSet = storage.createSet();
+        persistentSet = storage.<Stored>createSet();
     }
 
     @After
@@ -126,7 +127,7 @@ public class PersistentSetTest {
     public void test03() {
         Stored o = new Stored();
         persistentSet.add(o);
-        Iterator i = persistentSet.iterator();
+        Iterator<Stored> i = persistentSet.iterator();
         assertEquals(o, i.next());
         assertFalse(i.hasNext());
     }
@@ -146,7 +147,7 @@ public class PersistentSetTest {
      */
     @Test
     public void test04() {
-        Iterator i = persistentSet.iterator();
+        Iterator<Stored> i = persistentSet.iterator();
         assertFalse(i.hasNext());
     }
 
@@ -170,7 +171,7 @@ public class PersistentSetTest {
         Stored o = new Stored();
         persistentSet.add(o);
         persistentSet.remove(o);
-        Iterator i = persistentSet.iterator();
+        Iterator<Stored> i = persistentSet.iterator();
         assertFalse(i.hasNext());
     }
 
@@ -194,7 +195,7 @@ public class PersistentSetTest {
         Stored o = new Stored();
         assertTrue(persistentSet.add(o));
         assertFalse(persistentSet.add(o));
-        Iterator i = persistentSet.iterator();
+        Iterator<Stored> i = persistentSet.iterator();
         assertEquals(o, i.next());
         assertFalse(i.hasNext());
     }
@@ -243,9 +244,9 @@ public class PersistentSetTest {
         for(Stored s: arr){
             persistentSet.add(s);
         }
-        Iterator it = persistentSet.iterator();
+        Iterator<Stored> it = persistentSet.iterator();
         while(it.hasNext()){
-            Object o = it.next();
+            Stored o = it.next();
             assertNotNull(o);
             boolean found = false;
             for(int i=0; i<arr.length; i++){
@@ -280,9 +281,9 @@ public class PersistentSetTest {
         for (Stored s : arr) {
             persistentSet.add(s);
         }
-        Iterator it = persistentSet.iterator();
+        Iterator<Stored> it = persistentSet.iterator();
         while (it.hasNext()) {
-            Object o = it.next();
+            Stored o = it.next();
             assertNotNull(o);
             boolean found = false;
             for (int i = 0; i < arr.length; i++) {
