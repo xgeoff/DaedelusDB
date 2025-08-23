@@ -19,7 +19,7 @@ public class GraphNode extends Persistent {
         super(storage);                   // sets the storage field in superclass
         this.id = id;
         this.label = label;
-        outgoing = storage.createLink();  // returns LinkImpl
-        incoming = storage.createLink();
+        outgoing = getStorage().createLink();  // returns LinkImpl
+        incoming = getStorage().createLink();
     }
 }
