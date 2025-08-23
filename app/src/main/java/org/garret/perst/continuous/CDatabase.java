@@ -71,7 +71,7 @@ public class CDatabase {
         this.storage = storage;
         storage.setProperty("perst.concurrent.iterator", Boolean.TRUE);
         root = (RootObject)storage.getRoot();
-        typeMap = new HashMap<Class,TableDescriptor>();
+        typeMap = new HashMap<Class<?>,TableDescriptor>();
         if (root == null) { 
             root = new RootObject(storage);
             storage.setRoot(root);
@@ -500,8 +500,8 @@ public class CDatabase {
         Query<T> q = storage.<T>createQuery();
         q.prepare(table, predicate);            
         TableDescriptor desc = lookupTable(table);
-        if (desc != null) { 
-            desc.registerIndices(q, root, selector);
+        if (desc != null) {
+            desc.registerIndices(table, q, root, selector);
         }
         return q;
     }
@@ -881,12 +881,12 @@ public class CDatabase {
         }
     }
 
-    synchronized TableDescriptor lookupTable(Class type)
+    synchronized TableDescriptor lookupTable(Class<?> type)
     {
         return typeMap.get(type);
     }
 
-    synchronized TableDescriptor getTable(Class type)
+    synchronized TableDescriptor getTable(Class<?> type)
     {
         TableDescriptor desc = typeMap.get(type);
         if (desc == null) { 
@@ -898,9 +898,9 @@ public class CDatabase {
         return desc;
     }
 
-    void buildInheritanceHierarchy(TableDescriptor desc) { 
-        Class superclass = desc.type.getSuperclass();
-        if (superclass != CVersion.class) {             
+    void buildInheritanceHierarchy(TableDescriptor desc) {
+        Class<?> superclass = desc.type.getSuperclass();
+        if (superclass != CVersion.class) {
             desc.supertable = getTable(superclass);
         }
     }
@@ -933,7 +933,7 @@ public class CDatabase {
 
     Storage storage;
     RootObject root;
-    HashMap<Class,TableDescriptor> typeMap;   
+    HashMap<Class<?>,TableDescriptor> typeMap;
     IndexWriter indexWriter;
     IndexReader indexReader;
     StandardAnalyzer analyzer;

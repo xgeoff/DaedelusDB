@@ -152,7 +152,7 @@ class TableDescriptor extends Persistent implements Iterable<CVersionHistory>
 
     transient FullTextSearchableFieldDescriptor[] fullTextSearchableFields;    
     transient Field[] cloneableFields;
-    transient Class   type;
+    transient Class<?> type;
     transient boolean notVersioned;
     transient TableDescriptor supertable;
 
@@ -160,7 +160,7 @@ class TableDescriptor extends Persistent implements Iterable<CVersionHistory>
         return classExtent.iterator();
     }
 
-    static Field[] buildIndexableList(Class type) 
+    static Field[] buildIndexableList(Class<?> type)
     {
         ArrayList<Field> fieldList = new ArrayList<Field>();
         for (Field f : type.getDeclaredFields()) { 
@@ -177,7 +177,7 @@ class TableDescriptor extends Persistent implements Iterable<CVersionHistory>
         return arr;
     }
 
-    static FullTextSearchableFieldDescriptor[] buildFullTextSearchableList(Class type) 
+    static FullTextSearchableFieldDescriptor[] buildFullTextSearchableList(Class<?> type)
     {
         ArrayList<FullTextSearchableFieldDescriptor> fieldList = new ArrayList<FullTextSearchableFieldDescriptor>();
         do { 
@@ -188,7 +188,7 @@ class TableDescriptor extends Persistent implements Iterable<CVersionHistory>
                     } catch (Exception x) {}
                     
                     FullTextSearchableFieldDescriptor desc = new FullTextSearchableFieldDescriptor(f);
-                    Class fieldType = f.getType();
+                    Class<?> fieldType = f.getType();
                     if (fieldType != String.class) { 
                         FullTextSearchableFieldDescriptor[] searchableComponents = buildFullTextSearchableList(fieldType);
                         if (searchableComponents.length != 0) { 
@@ -203,13 +203,13 @@ class TableDescriptor extends Persistent implements Iterable<CVersionHistory>
         return fieldList.toArray(new FullTextSearchableFieldDescriptor[fieldList.size()]);
     }
 
-    static Field[] buildCloneableList(Class type) 
+    static Field[] buildCloneableList(Class<?> type)
     {
         ArrayList<Field> fieldList = new ArrayList<Field>();
         do { 
             for (Field f : type.getDeclaredFields()) { 
                 if ((f.getModifiers() & (Modifier.TRANSIENT|Modifier.STATIC)) == 0) { 
-                    Class fieldType = f.getType();
+                    Class<?> fieldType = f.getType();
                     if (fieldType == Link.class || ICloneable.class.isAssignableFrom(fieldType) || fieldType.isArray()) { 
                         try { 
                             f.setAccessible(true);
@@ -390,12 +390,12 @@ class TableDescriptor extends Persistent implements Iterable<CVersionHistory>
         return null;
     }
 
-    void registerIndices(Query q, IResource resource, VersionSelector selector)
+    <T> void registerIndices(Class<T> cls, Query<T> q, IResource resource, VersionSelector selector)
     {
         TableDescriptor td = this;
-        do {             
+        do {
             for (IndexDescriptor id : td.indices) {
-                q.addIndex(id.fieldName, new IndexFilter(type, id, resource, selector));
+                q.addIndex(id.fieldName, new IndexFilter<T>(cls, id, resource, selector));
             }
         } while ((td = td.supertable) != null);
     }
@@ -421,7 +421,7 @@ class TableDescriptor extends Persistent implements Iterable<CVersionHistory>
                                     (e.getKey().toString(), 
                                      text, 
                                      org.apache.lucene.document.Field.Store.YES, 
-                                     org.apache.lucene.document.Field.Index.UN_TOKENIZED));
+                                     org.apache.lucene.document.Field.Index.NOT_ANALYZED));
                         }
                     } else { 
                         String text = getKeyText(value);
@@ -431,7 +431,7 @@ class TableDescriptor extends Persistent implements Iterable<CVersionHistory>
                                 (desc.field.getName(), 
                                  text, 
                                  org.apache.lucene.document.Field.Store.YES, 
-                                 org.apache.lucene.document.Field.Index.TOKENIZED));
+                                 org.apache.lucene.document.Field.Index.ANALYZED));
                     }
                 }
             }    
@@ -452,25 +452,25 @@ class TableDescriptor extends Persistent implements Iterable<CVersionHistory>
                 ("Oid", 
                  Integer.toString(v.getOid()), 
                  org.apache.lucene.document.Field.Store.YES, 
-                 org.apache.lucene.document.Field.Index.UN_TOKENIZED));
+                 org.apache.lucene.document.Field.Index.NOT_ANALYZED));
         doc.add(new org.apache.lucene.document.Field
                 ("Class", 
                  v.getClass().getName(),
                  org.apache.lucene.document.Field.Store.YES, 
-                 org.apache.lucene.document.Field.Index.UN_TOKENIZED));
+                 org.apache.lucene.document.Field.Index.NOT_ANALYZED));
         doc.add(new org.apache.lucene.document.Field
                 ("Created", 
                  DateTools.timeToString(System.currentTimeMillis(), DateTools.Resolution.MINUTE),
                  org.apache.lucene.document.Field.Store.YES, 
-                 org.apache.lucene.document.Field.Index.UN_TOKENIZED));
+                 org.apache.lucene.document.Field.Index.NOT_ANALYZED));
         doc.add(new org.apache.lucene.document.Field
                 ("Any", any.toString(),
                  org.apache.lucene.document.Field.Store.YES, 
-                 org.apache.lucene.document.Field.Index.TOKENIZED));
+                 org.apache.lucene.document.Field.Index.ANALYZED));
         return doc;
     }
 
-    TableDescriptor(Storage storage, Class table) 
+    TableDescriptor(Storage storage, Class<?> table)
     {
         super(storage);
         type = table;
