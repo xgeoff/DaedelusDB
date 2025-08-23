@@ -164,10 +164,10 @@ public class Database implements IndexProvider {
      * @param table class corresponding to the table
      * @return <code>true</code> if table is created, <code>false</code> if table 
      * alreay exists
-     * @deprecated Since version 2.75 of Perst it is not necessary to create table and index 
-     * descriptors explicitly: them are automatically create when object is inserted in the 
-     * database first time (to mark fields for which indices should be created, use Indexable 
-     * annotation)
+     * @deprecated Since version 2.75 of Perst tables and indices are created automatically
+     * when the first instance of the class is stored. Simply insert objects with fields
+     * annotated by {@link Indexable} and the database will create the necessary descriptors
+     * on demand.
      */
     @Deprecated
     public boolean createTable(Class table) {
@@ -518,10 +518,9 @@ public class Database implements IndexProvider {
      * the specified class
      * @return <code>true</code> if index is created, <code>false</code> if index
      * already exists
-     * @deprecated since version 2.75 of Perst it is not necessary to create table and index 
-     * descriptors explicitly: them are automatically create when object is inserted in the 
-     * database first time (to mark fields for which indices should be created, use Indexable 
-     * annotation)
+     * @deprecated Since version 2.75 of Perst indices are created automatically for
+     * fields annotated with {@link Indexable}. Store objects and the appropriate indices
+     * will be created as needed.
      */
     @Deprecated
     public boolean createIndex(Class table, String key, int kind) {
@@ -532,14 +531,13 @@ public class Database implements IndexProvider {
      * @param table class corresponding to the table
      * @param key field of the class to be indexed
      * @param unique if index is unique or not
-     * @exception StorageError (CLASS_NOT_FOUND) exception is thrown if there is no table corresponding to 
+     * @exception StorageError (CLASS_NOT_FOUND) exception is thrown if there is no table corresponding to
      * the specified class
      * @return <code>true</code> if index is created, <code>false</code> if index
      * already exists
-     * @deprecated since version 2.75 of Perst it is not necessary to create table and index 
-     * descriptors explicitly: them are automatically create when object is inserted in the 
-     * database first time (to mark fields for which indices should be created, use Indexable 
-     * annotation)
+     * @deprecated Since version 2.75 of Perst, indices are created automatically for fields
+     * annotated with {@link Indexable}. Store objects and the index will be created on
+     * demand instead of calling this method explicitly.
      */
     @Deprecated
     public boolean createIndex(Class table, String key, boolean unique) {
@@ -556,10 +554,9 @@ public class Database implements IndexProvider {
      * the specified class
      * @return <code>true</code> if index is created, <code>false</code> if index
      * already exists
-     * @deprecated since version 2.75 of Perst it is not necessary to create table and index 
-     * descriptors explicitly: them are automatically cerate when objct is inserted in the 
-     * database first time (to mark fields for which indices should be created, use Indexable 
-     * annotaion)
+     * @deprecated Since version 2.75 of Perst indices are created automatically for
+     * fields annotated with {@link Indexable}. Store objects with annotated fields and
+     * the index will be created on demand.
      */
     @Deprecated
     public boolean createIndex(Class table, String key, boolean unique, boolean caseInsensitive, boolean thick) {
@@ -581,10 +578,9 @@ public class Database implements IndexProvider {
      * the specified class
      * @return <code>true</code> if index is created, <code>false</code> if index
      * already exists
-     * @deprecated since version 2.75 of Perst it is not necessary to create table and index 
-     * descriptors explicitly: them are automatically cerate when objct is inserted in the 
-     * database first time (to mark fields for which indices should be created, use Indexable 
-     * annotaion)
+     * @deprecated Since version 2.75 of Perst indices are created automatically for
+     * fields annotated with {@link Indexable}. Simply store objects and the index will
+     * be created as needed; explicit calls to this method are no longer required.
      */
     @Deprecated
     public boolean createIndex(Class table, String key, boolean unique, boolean caseInsensitive, boolean thick, boolean randomAccess) {
