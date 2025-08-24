@@ -1,5 +1,8 @@
 package org.garret.perst.impl;
 import  org.garret.perst.*;
+import  java.io.IOException;
+import  java.nio.MappedByteBuffer;
+import  java.nio.channels.FileChannel;
 
 class PagePool { 
     LRU     lru;
@@ -7,7 +10,8 @@ class PagePool {
     Page    hashTable[];
     int     poolSize;
     boolean autoExtended;
-    IFile   file;
+    FileChannel file;
+    boolean noFlush;
     long    lruLimit;
 
     int     nDirtyPages;
@@ -67,7 +71,7 @@ class PagePool {
                     synchronized (pg) { 
                         if ((pg.state & Page.psDirty) != 0) { 
                             pg.state = 0;
-                            file.write(pg.offs, pg.data);
+                            writePage(pg.offs, pg.data);
                             if (!flushing) { 
                                 dirtyPages[pg.writeQueueIndex] = dirtyPages[--nDirtyPages];
                                 dirtyPages[pg.writeQueueIndex].writeQueueIndex = pg.writeQueueIndex;
@@ -105,7 +109,7 @@ class PagePool {
                 pg.state |= Page.psDirty;
             }
             if ((pg.state & Page.psRaw) != 0) {
-                if (file.read(pg.offs, pg.data) < Page.pageSize) {
+                if (readPage(pg.offs, pg.data) < Page.pageSize) {
                     for (int i = 0; i < Page.pageSize; i++) { 
                         pg.data[i] = 0;
                     }
@@ -169,9 +173,10 @@ class PagePool {
         }
     }
 
-    final void open(IFile f) 
+    final void open(FileChannel f, boolean noFlush)
     {
         file = f;
+        this.noFlush = noFlush;
         reset();
     }
 
@@ -196,7 +201,11 @@ class PagePool {
     }
 
     final synchronized void close() {
-        file.close();
+        try {
+            file.close();
+        } catch (IOException x) {
+            throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
+        }
         hashTable = null;
         dirtyPages = null;
         lru = null;
@@ -280,23 +289,60 @@ class PagePool {
         unfix(pg);
     }
 
-    void flush() { 
-        synchronized (this) { 
+    void flush() {
+        synchronized (this) {
             flushing = true;
-            java.util.Arrays.sort(dirtyPages, 0, nDirtyPages); 
+            java.util.Arrays.sort(dirtyPages, 0, nDirtyPages);
         }
-        for (int i = 0; i < nDirtyPages; i++) { 
+        for (int i = 0; i < nDirtyPages; i++) {
             Page pg = dirtyPages[i];
-            synchronized (pg) { 
-                if ((pg.state & Page.psDirty) != 0) { 
-                    file.write(pg.offs, pg.data);
+            synchronized (pg) {
+                if ((pg.state & Page.psDirty) != 0) {
+                    writePage(pg.offs, pg.data);
                     pg.state &= ~Page.psDirty;
                 }
             }
-        }           
-        file.sync();
+        }
+        syncFile();
         nDirtyPages = 0;
         flushing = false;
+    }
+
+    private void writePage(long pos, byte[] buf) {
+        try {
+            MappedByteBuffer mbb = file.map(FileChannel.MapMode.READ_WRITE, pos, Page.pageSize);
+            mbb.put(buf, 0, Page.pageSize);
+            if (!noFlush) {
+                mbb.force();
+            }
+        } catch (IOException x) {
+            throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
+        }
+    }
+
+    private int readPage(long pos, byte[] buf) {
+        try {
+            long size = file.size();
+            if (pos >= size) {
+                return 0;
+            }
+            int len = (int)Math.min(Page.pageSize, size - pos);
+            MappedByteBuffer mbb = file.map(FileChannel.MapMode.READ_ONLY, pos, len);
+            mbb.get(buf, 0, len);
+            return len;
+        } catch (IOException x) {
+            throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
+        }
+    }
+
+    private void syncFile() {
+        if (!noFlush) {
+            try {
+                file.force(true);
+            } catch (IOException x) {
+                throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
+            }
+        }
     }
 }
 

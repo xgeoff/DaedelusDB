@@ -2,6 +2,7 @@ package biz.digitalindustry.db.graph;
 
 import org.garret.perst.*;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,7 @@ public class GraphDatabase implements GraphQueryEngine {
     private Storage db;
     private FieldIndex<GraphNode> nodeIndex;
 
-    public GraphDatabase(String path) {
+    public GraphDatabase(Path path) {
         db = StorageFactory.getInstance().createStorage();
         db.open(path, Storage.DEFAULT_PAGE_POOL_SIZE);
 

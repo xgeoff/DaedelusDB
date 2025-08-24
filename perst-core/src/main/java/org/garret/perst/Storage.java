@@ -1,6 +1,7 @@
 package org.garret.perst;
 
 import java.util.Iterator;
+import java.nio.file.Path;
 import org.garret.perst.fulltext.*;
 import org.garret.perst.impl.ThreadTransactionContext;
 
@@ -30,45 +31,16 @@ public interface Storage {
      * @param pagePoolSize size of page pool (in bytes). Page pool should contain
      * at least ten 4kb pages, so minimal page pool size should be at least 40Kb.
      * But larger page pool usually leads to better performance (unless it could not fit
-     * in memory and cause swapping). Value 0 of this paremeter corresponds to infinite
-     * page pool (all pages are cashed in memory). It is especially useful for in-memory
-     * database, when storage is created with NullFile.
-     * 
+     * in memory and cause swapping). Value 0 of this parameter corresponds to an infinite
+     * page pool (all pages are cached in memory).
      */
-    public void open(String filePath, long pagePoolSize);
-
-    /**
-     * Open the storage
-     * @param file user specific implementation of IFile interface
-     * @param pagePoolSize size of page pool (in bytes). Page pool should contain
-     * at least ten 4kb pages, so minimal page pool size should be at least 40Kb.
-     * But larger page pool ussually leads to better performance (unless it could not fit
-     * in memory and cause swapping).
-     */
-    public void open(IFile file, long pagePoolSize);
-
-    /**
-     * Open the storage with default page pool size
-     * @param file user specific implementation of IFile interface
-     */ 
-    public void open(IFile file);
+    public void open(Path filePath, long pagePoolSize);
 
     /**
      * Open the storage with default page pool size
      * @param filePath path to the database file
-     */ 
-    public void open(String filePath);
-
-    /**
-     * Open the encrypted storage
-     * @param filePath path to the database file
-     * @param pagePoolSize size of page pool (in bytes). Page pool should contain
-     * at least then 4kb pages, so minimal page pool size should be at least 40Kb.
-     * But larger page pool usually leads to better performance (unless it could not fit
-     * in memory and cause swapping).
-     * @param cipherKey cipher key
      */
-    public void open(String filePath, long pagePoolSize, String cipherKey);
+    public void open(Path filePath);
 
     /**
      * Check if database is opened

@@ -48,6 +48,9 @@ sourceSets {
             exclude 'org/garret/perst/jassist/**'
             exclude 'org/garret/perst/rdf/**'
             exclude 'org/garret/perst/impl/sun14/**'
+            exclude 'org/garret/perst/impl/Replication**'
+            exclude 'org/garret/perst/impl/*Replication*'
+            exclude 'org/garret/perst/Replication**'
         }
     }
 }
