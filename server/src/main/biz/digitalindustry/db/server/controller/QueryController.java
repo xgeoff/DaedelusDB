@@ -23,6 +23,6 @@ public class QueryController {
 
         return registry.getHandler("cypher")
                 .map(handler -> new QueryResponse(handler.handle(query)))
-                .orElseThrow(() -> new IllegalArgumentException("Unsupported query type: cypher"));
+                .orElseThrow();
     }
 }
