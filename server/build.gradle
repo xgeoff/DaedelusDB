@@ -1,0 +1,22 @@
+plugins {
+    id "application"    // or "java" if you run it differently
+}
+
+application {
+    mainClass = "biz.digitalindustry.db.server.App"
+}
+repositories {
+    // Use Maven Central for resolving dependencies.
+    mavenCentral()
+}
+dependencies {
+    // Use the latest Groovy version for Spock testing
+    testImplementation libs.groovy
+
+    // Use the awesome Spock testing and specification framework even with Java
+    testImplementation libs.spock.core
+    testImplementation libs.junit
+
+    // This dependency is used by the library code.
+    implementation libs.guava
+}
