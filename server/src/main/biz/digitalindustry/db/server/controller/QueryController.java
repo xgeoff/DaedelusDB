@@ -3,6 +3,7 @@ package biz.digitalindustry.db.server.controller;
 import biz.digitalindustry.db.server.model.QueryRequest;
 import biz.digitalindustry.db.server.model.QueryResponse;
 import biz.digitalindustry.db.server.queryhandler.QueryHandlerRegistry;
+import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
 
 @Controller("/query")
@@ -14,6 +15,7 @@ public class QueryController {
     }
 
     @Post
+    @Produces(MediaType.APPLICATION_JSON)
     public QueryResponse handleQuery(@Body QueryRequest request) {
         String query = request.getCypher();
 
