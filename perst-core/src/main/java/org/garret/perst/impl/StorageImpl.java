@@ -992,7 +992,7 @@ public class StorageImpl implements Storage {
 
         modified = false;
 
-        objectCache = createObjectCache(cacheKind, pagePoolSize, objectCacheInitSize);
+        objectCache = new ObjectCache(createObjectCache(cacheKind, pagePoolSize, objectCacheInitSize));
 
         objMap = new ObjectMap(objectCacheInitSize);
 
@@ -2647,7 +2647,7 @@ public class StorageImpl implements Storage {
      * @return transaction context associated with current thread
      */
     public ThreadTransactionContext getTransactionContext() {
-        return (ThreadTransactionContext)transactionContext.get();
+        return transactionManager.getContext();
     }
 
     /**
@@ -2657,9 +2657,7 @@ public class StorageImpl implements Storage {
      * @return transaction context previously associated with this thread
      */
     public ThreadTransactionContext setTransactionContext(ThreadTransactionContext ctx) {
-        ThreadTransactionContext oldCtx = (ThreadTransactionContext)transactionContext.get();
-        transactionContext.set(ctx);
-        return oldCtx;
+        return transactionManager.setContext(ctx);
     }
 
     public void beginSerializableTransaction()
@@ -5470,15 +5468,11 @@ public class StorageImpl implements Storage {
     Object    transactionMonitor;
     PersistentResource transactionLock;
 
-    final ThreadLocal<ThreadTransactionContext> transactionContext = new ThreadLocal<ThreadTransactionContext>() {
-         protected synchronized ThreadTransactionContext initialValue() {
-             return new ThreadTransactionContext();
-         }
-    };
+    TransactionManager transactionManager = new TransactionManager();
     boolean useSerializableTransactions;
 
 
-    OidHashTable     objectCache;
+    ObjectCache     objectCache;
     HashMap<Class,ClassDescriptor> classDescMap;
     ClassDescriptor  descList;
 }
