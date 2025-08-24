@@ -20,26 +20,20 @@ storage.open("data.dbs");
 storage.setWriterThread(Thread.currentThread());
 
 Thread reader = new Thread(() -> {
-    storage.beginThreadTransaction(Storage.READ_ONLY_TRANSACTION);
-    try {
-        MyRoot root = storage.getRoot();
-        System.out.println(root.value);
-    } finally {
-        storage.endThreadTransaction();
-    }
+try (Transaction tx = storage.beginTransaction(TransactionMode.READ_ONLY)) {
+    MyRoot root = storage.getRoot();
+    System.out.println(root.value);
+}
 });
 
 reader.start();
 
 // All updates must run on the writer thread
-storage.beginThreadTransaction(Storage.EXCLUSIVE_TRANSACTION);
-try {
+try (Transaction tx = storage.beginTransaction(TransactionMode.EXCLUSIVE)) {
     MyRoot root = storage.getRoot();
     root.value++;
     storage.modify(root);
     storage.commit();
-} finally {
-    storage.endThreadTransaction();
 }
 
 reader.join();

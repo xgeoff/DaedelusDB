@@ -35,13 +35,13 @@ public class TestServer {
             String tid = "Thread" + id + ":";
             FieldIndex index = root.indices[id % nIndices];
 
-            for (i = 0; i < nRecords; i++) { 
-                db.beginThreadTransaction(Storage.SERIALIZABLE_TRANSACTION);
-                index.exclusiveLock();
-                Record rec = new Record();
-                rec.key = tid + toStr(i);
-                index.put(rec);
-                db.endThreadTransaction();
+            for (i = 0; i < nRecords; i++) {
+                try (Transaction tx = db.beginTransaction(TransactionMode.SERIALIZABLE)) {
+                    index.exclusiveLock();
+                    Record rec = new Record();
+                    rec.key = tid + toStr(i);
+                    index.put(rec);
+                }
             }
 
             index.sharedLock();
@@ -61,12 +61,12 @@ public class TestServer {
                 index.unlock();
             }
 
-            for (i = 0; i < nRecords; i++) { 
-                db.beginThreadTransaction(Storage.SERIALIZABLE_TRANSACTION);
-                index.exclusiveLock();
-                Record rec = (Record)index.remove(new Key(tid + toStr(i)));
-                rec.deallocate();
-                db.endThreadTransaction();
+            for (i = 0; i < nRecords; i++) {
+                try (Transaction tx = db.beginTransaction(TransactionMode.SERIALIZABLE)) {
+                    index.exclusiveLock();
+                    Record rec = (Record)index.remove(new Key(tid + toStr(i)));
+                    rec.deallocate();
+                }
             }
         }
     }

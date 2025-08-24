@@ -4,19 +4,6 @@ package org.garret.perst;
  * Service interface for transaction management operations.
  */
 public interface TransactionManager {
-    /** Exclusive per-thread transaction: each thread access database in exclusive mode */
-    int EXCLUSIVE_TRANSACTION = 0;
-    /** Alias for EXCLUSIVE_TRANSACTION. In case of multiclient access,
-     * any transaction modifying database should be exclusive. */
-    int READ_WRITE_TRANSACTION = EXCLUSIVE_TRANSACTION;
-    /** Cooperative mode; all threads share the same transaction. */
-    int COOPERATIVE_TRANSACTION = 1;
-    /** Alias for COOPERATIVE_TRANSACTION. Only read-only transactions can be executed in parallel. */
-    int READ_ONLY_TRANSACTION = COOPERATIVE_TRANSACTION;
-    /** Serializable per-thread transaction. */
-    int SERIALIZABLE_TRANSACTION = 2;
-    /** Read only transaction which can be started at replication slave node. */
-    int REPLICATION_SLAVE_TRANSACTION = 3;
 
     /** Commit changes done by the last transaction. */
     void commit();
@@ -25,7 +12,18 @@ public interface TransactionManager {
     void rollback();
 
     /** Begin per-thread transaction. */
-    void beginThreadTransaction(int mode);
+    void beginThreadTransaction(TransactionMode mode);
+
+    /**
+     * Convenience method returning {@link Transaction} object allowing
+     * the use of try-with-resources statement for transactions.
+     *
+     * @param mode transaction mode
+     * @return transaction handle
+     */
+    default Transaction beginTransaction(TransactionMode mode) {
+        return new Transaction(this, mode);
+    }
 
     /** End per-thread transaction started by beginThreadTransaction method. */
     void endThreadTransaction();

@@ -55,7 +55,7 @@ public abstract class ReplicationSlaveStorageImpl extends StorageImpl implements
         waitSynchronizationCompletion();
         waitInitializationCompletion(); 
         opened = true;
-        beginThreadTransaction(REPLICATION_SLAVE_TRANSACTION);
+        beginThreadTransaction(TransactionMode.REPLICATION_SLAVE);
         reloadScheme();
         endThreadTransaction();
     }
@@ -69,9 +69,9 @@ public abstract class ReplicationSlaveStorageImpl extends StorageImpl implements
         return socket != null;
     }
     
-    public void beginThreadTransaction(int mode)
+    public void beginThreadTransaction(TransactionMode mode)
     {
-        if (mode != REPLICATION_SLAVE_TRANSACTION) {
+        if (mode != TransactionMode.REPLICATION_SLAVE) {
             throw new IllegalArgumentException("Illegal transaction mode");
         }
         lock.sharedLock();
