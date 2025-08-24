@@ -11,6 +11,5 @@ plugins {
 }
 
 rootProject.name = 'perstson'
-include(":app", ":server")
-project(":server").projectDir = file("server")
+include(":perst-core", ":perst-index-graph", ":perst-server")
 
