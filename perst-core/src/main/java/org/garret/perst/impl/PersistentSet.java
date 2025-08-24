@@ -65,7 +65,7 @@ class PersistentSet<T> extends Btree<T> implements IPersistentSet<T>
 
     public boolean contains(Object o) {
         Key key = new Key(o);
-        Iterator i = iterator(key, key, ASCENT_ORDER);
+        Iterator<T> i = iterator(key, key, ASCENT_ORDER);
         return i.hasNext();
     }
     
@@ -89,7 +89,7 @@ class PersistentSet<T> extends Btree<T> implements IPersistentSet<T>
         if (!(o instanceof Set)) {
             return false;
         }
-        Collection c = (Collection) o;
+        Collection<?> c = (Collection<?>) o;
         if (c.size() != size()) {
             return false;
         }
@@ -98,7 +98,7 @@ class PersistentSet<T> extends Btree<T> implements IPersistentSet<T>
 
     public int hashCode() {
         int h = 0;
-        Iterator i = iterator();
+        Iterator<T> i = iterator();
         while (i.hasNext()) {
             h += getStorage().getOid(i.next());
         }

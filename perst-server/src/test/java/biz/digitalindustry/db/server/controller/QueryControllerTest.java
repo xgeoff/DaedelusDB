@@ -34,15 +34,15 @@ class QueryControllerTest {
         assertEquals(HttpStatus.OK, response.getStatus());
         QueryResponse body = response.body();
         assertNotNull(body);
-        assertNotNull(body.getResults());
-        assertFalse(body.getResults().isEmpty());
+        assertNotNull(body.results());
+        assertFalse(body.results().isEmpty());
 
-        Map<String, Node> row = body.getResults().get(0);
+        Map<String, Node> row = body.results().get(0);
         assertTrue(row.containsKey("node"));
 
         Node node = row.get("node");
-        assertNotNull(node.getId());
-        assertEquals("Processed Cypher query: MATCH (n) RETURN n", node.getProperties().get("result"));
+        assertNotNull(node.id());
+        assertEquals("Processed Cypher query: MATCH (n) RETURN n", node.properties().get("result"));
     }
 
     @Test
@@ -55,12 +55,12 @@ class QueryControllerTest {
         assertEquals(HttpStatus.OK, response.getStatus());
         QueryResponse body = response.body();
         assertNotNull(body);
-        assertFalse(body.getResults().isEmpty());
+        assertFalse(body.results().isEmpty());
 
-        Map<String, Node> row = body.getResults().get(0);
+        Map<String, Node> row = body.results().get(0);
         Node node = row.get("row");
         assertNotNull(node);
-        assertEquals("Processed SQL query: SELECT * FROM Person", node.getProperties().get("result"));
+        assertEquals("Processed SQL query: SELECT * FROM Person", node.properties().get("result"));
     }
 
     @Test

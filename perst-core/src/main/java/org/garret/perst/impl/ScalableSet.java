@@ -120,7 +120,7 @@ class ScalableSet<T> extends PersistentCollection<T> implements IPersistentSet<T
         if (!(o instanceof Set)) {
             return false;
         }
-        Collection c = (Collection) o;
+        Collection<?> c = (Collection<?>) o;
         if (c.size() != size()) {
             return false;
         }

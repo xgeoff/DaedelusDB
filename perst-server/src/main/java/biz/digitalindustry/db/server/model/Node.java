@@ -6,25 +6,15 @@ import io.micronaut.core.annotation.Introspected;
 import java.util.Map;
 
 @Introspected
-public class Node {
-    private String id;
-    private Map<String, Object> properties;
-
+public record Node(String id, Map<String, Object> properties) {
     public Node() {
+        this(null, Map.of());
     }
 
     @JsonCreator
     public Node(@JsonProperty("id") String id,
                 @JsonProperty("properties") Map<String, Object> properties) {
         this.id = id;
-        this.properties = properties;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public Map<String, Object> getProperties() {
-        return properties;
+        this.properties = properties == null ? Map.of() : Map.copyOf(properties);
     }
 }
