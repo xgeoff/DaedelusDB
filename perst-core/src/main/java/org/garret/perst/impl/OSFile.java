@@ -1,128 +1,133 @@
 package org.garret.perst.impl;
 import  org.garret.perst.*;
 
-import java.lang.reflect.*;
-import java.nio.channels.*;
-import java.io.*;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
-public class OSFile implements IFile { 
-    public void write(long pos, byte[] buf) 
-    {
-        try { 
-            file.seek(pos);
-            file.write(buf, 0, buf.length);
-        } catch(IOException x) { 
+/**
+ * Implementation of {@link IFile} based on {@link FileChannel} and
+ * {@link java.nio.MappedByteBuffer}. All I/O operations are performed using
+ * NIO buffers which provides better throughput than classic
+ * {@link java.io.RandomAccessFile} based implementation.
+ */
+public class OSFile implements IFile {
+
+    public void write(long pos, byte[] buf) {
+        try {
+            MappedByteBufferWrapper mapped = map(pos, buf.length, true);
+            mapped.buffer.put(buf);
+            if (!noFlush) {
+                mapped.buffer.force();
+            }
+        } catch (IOException x) {
             throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
         }
     }
 
-    public int read(long pos, byte[] buf) 
-    { 
-        try { 
-            file.seek(pos);
-            return file.read(buf, 0, buf.length);
-        } catch(IOException x) { 
+    public int read(long pos, byte[] buf) {
+        try {
+            long size = channel.size();
+            if (pos >= size) {
+                return 0;
+            }
+            int len = (int)Math.min(buf.length, size - pos);
+            MappedByteBufferWrapper mapped = map(pos, len, false);
+            mapped.buffer.get(buf, 0, len);
+            return len;
+        } catch (IOException x) {
             throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
         }
     }
-        
-    public void sync()
-    { 
-        if (!noFlush) { 
-            try {   
-                file.getFD().sync();
-            } catch(IOException x) { 
+
+    public void sync() {
+        if (!noFlush) {
+            try {
+                channel.force(true);
+            } catch (IOException x) {
                 throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
             }
         }
     }
-    
-    public void close() 
-    { 
-        try { 
-            file.close();
-        } catch(IOException x) { 
+
+    public void close() {
+        try {
+            channel.close();
+        } catch (IOException x) {
             throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
         }
     }
 
-    public boolean tryLock(boolean shared) 
-    { 
-        try { 
-            lck = file.getChannel().tryLock(0, Long.MAX_VALUE, shared);
+    public boolean tryLock(boolean shared) {
+        try {
+            lck = channel.tryLock(0, Long.MAX_VALUE, shared);
             return lck != null;
-        } catch (IOException x) { 
+        } catch (IOException x) {
             return true;
         }
     }
 
-    public void lock(boolean shared) 
-    { 
-        try { 
-            lck = file.getChannel().lock(0, Long.MAX_VALUE, shared);
-        } catch (IOException x) { 
+    public void lock(boolean shared) {
+        try {
+            lck = channel.lock(0, Long.MAX_VALUE, shared);
+        } catch (IOException x) {
             throw new StorageError(StorageError.LOCK_FAILED, x);
         }
     }
 
-    public void unlock() 
-    { 
-        try { 
-            lck.release();
-        } catch (IOException x) { 
+    public void unlock() {
+        try {
+            if (lck != null) {
+                lck.release();
+            }
+        } catch (IOException x) {
             throw new StorageError(StorageError.LOCK_FAILED, x);
         }
     }
 
-    /* JDK 1.3 and older
-    public static boolean lockFile(RandomAccessFile file, boolean shared) 
-    { 
-	try { 
-	    Class cls = file.getClass();
-	    Method getChannel = cls.getMethod("getChannel", new Class[0]);
-	    if (getChannel != null) { 
-		Object channel = getChannel.invoke(file, new Object[0]);
-		if (channel != null) { 
-		    cls = channel.getClass();
-		    Class[] paramType = new Class[3];
-		    paramType[0] = Long.TYPE;
-		    paramType[1] = Long.TYPE;
-		    paramType[2] = Boolean.TYPE;
-		    Method lock = cls.getMethod("lock", paramType);
-		    if (lock != null) { 
-			Object[] param = new Object[3];
-			param[0] = Long.valueOf(0);
-			param[1] = Long.valueOf(Long.MAX_VALUE);
-			param[2] = Boolean.valueOf(shared);
-			return lock.invoke(channel, param) != null;
-		    }
-		}
-	    }
-	} catch (Exception x) {}
-
-	return true;
+    /**
+     * Map region of file starting at given position. Wrapper class is used to
+     * work around lack of AutoCloseable for MappedByteBuffer.
+     */
+    private MappedByteBufferWrapper map(long pos, int size, boolean write) throws IOException {
+        return new MappedByteBufferWrapper(
+            channel.map(write ? FileChannel.MapMode.READ_WRITE : FileChannel.MapMode.READ_ONLY, pos, size));
     }
-    */
 
-    public OSFile(String filePath, boolean readOnly, boolean noFlush) { 
+    /**
+     * Construct file backed by {@link FileChannel}.
+     */
+    public OSFile(String filePath, boolean readOnly, boolean noFlush) {
         this.noFlush = noFlush;
-        try { 
-            file = new RandomAccessFile(filePath, readOnly ? "r" : "rw");
-        } catch(IOException x) { 
+        try {
+            channel = FileChannel.open(Path.of(filePath), readOnly
+                    ? StandardOpenOption.READ
+                    : StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+        } catch (IOException x) {
             throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
         }
     }
 
     public long length() {
-        try { 
-            return file.length();
-        } catch (IOException x) { 
+        try {
+            return channel.size();
+        } catch (IOException x) {
             return -1;
         }
     }
 
+    private static class MappedByteBufferWrapper {
+        final java.nio.MappedByteBuffer buffer;
 
-    protected RandomAccessFile file;
-    protected boolean          noFlush;
-    private   FileLock         lck;
+        MappedByteBufferWrapper(java.nio.MappedByteBuffer buffer) {
+            this.buffer = buffer;
+        }
+    }
+
+    protected FileChannel channel;
+    protected boolean    noFlush;
+    private FileLock     lck;
 }
