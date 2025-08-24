@@ -1,15 +1,13 @@
 package biz.digitalindustry.db.server.model;
 
-import java.util.*;
-
 public class QueryRequest {
-    private Map<String, String> query;
+    private String cypher;
 
-    public Map<String, String> getQuery() {
-        return query;
+    public String getCypher() {
+        return cypher;
     }
 
-    public void setQuery(Map<String, String> query) {
-        this.query = query;
+    public void setCypher(String cypher) {
+        this.cypher = cypher;
     }
 }

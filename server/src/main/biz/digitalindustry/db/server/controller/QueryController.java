@@ -5,8 +5,6 @@ import model.QueryRequest;
 import model.QueryResponse;
 import io.micronaut.http.annotation.*;
 
-import java.util.*;
-
 @Controller("/query")
 public class QueryController {
     private final QueryHandlerRegistry registry;
@@ -17,18 +15,14 @@ public class QueryController {
 
     @Post
     public QueryResponse handleQuery(@Body QueryRequest request) {
-        Map<String, String> queries = request.getQuery();
+        String query = request.getCypher();
 
-        if (queries == null || queries.isEmpty()) {
+        if (query == null || query.isEmpty()) {
             throw new IllegalArgumentException("Missing query payload");
         }
 
-        Map.Entry<String, String> entry = queries.entrySet().iterator().next();
-        String queryType = entry.getKey();
-        String query = entry.getValue();
-
-        return registry.getHandler(queryType)
+        return registry.getHandler("cypher")
                 .map(handler -> new QueryResponse(handler.handle(query)))
-                .orElseThrow(() -> new IllegalArgumentException("Unsupported query type: " + queryType));
+                .orElseThrow(() -> new IllegalArgumentException("Unsupported query type: cypher"));
     }
 }
