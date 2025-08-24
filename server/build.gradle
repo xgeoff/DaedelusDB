@@ -1,22 +1,52 @@
 plugins {
-    id "application"    // or "java" if you run it differently
+    id("io.micronaut.application") version "4.3.4"
+    id("io.micronaut.aot") version "4.3.4"
+    id("java")
+}
+
+version = "0.1"
+group = "biz.digitalindustry.graphdb"
+
+repositories {
+    mavenCentral()
+}
+
+micronaut {
+    runtime("netty")
+    testRuntime("junit5")
+    processing {
+        incremental(true)
+        annotations("biz.digitalindustry.graphdb.*")
+    }
+}
+
+dependencies {
+    implementation("io.micronaut:micronaut-http-server-netty")
+    implementation("io.micronaut:micronaut-runtime")
+    implementation("io.micronaut.jackson:micronaut-jackson-databind")
+    implementation("jakarta.annotation:jakarta.annotation-api")
+    implementation("jakarta.inject:jakarta.inject-api")
+
+    // Optional: Logging
+    runtimeOnly("ch.qos.logback:logback-classic")
+
+    // Optional: If using Micronaut validation
+    implementation("io.micronaut.validation:micronaut-validation")
+
+    // Testing
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 application {
-    mainClass = "biz.digitalindustry.db.server.App"
+    mainClass.set("biz.digitalindustry.db.server.Application")
 }
-repositories {
-    // Use Maven Central for resolving dependencies.
-    mavenCentral()
-}
-dependencies {
-    // Use the latest Groovy version for Spock testing
-    testImplementation libs.groovy
 
-    // Use the awesome Spock testing and specification framework even with Java
-    testImplementation libs.spock.core
-    testImplementation libs.junit
-
-    // This dependency is used by the library code.
-    implementation libs.guava
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
 }
