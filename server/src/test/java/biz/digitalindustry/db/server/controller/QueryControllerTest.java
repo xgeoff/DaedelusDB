@@ -28,9 +28,9 @@ class QueryControllerTest {
     @Test
     void testPostCypherQueryReturnsStructuredResults() {
         QueryRequest request = new QueryRequest();
-        request.setCypher("MATCH (n) RETURN n");
+        request.addQuery("cypher", "MATCH (n) RETURN n");
 
-        HttpRequest<QueryRequest> httpRequest = HttpRequest.POST("/query", request);
+        HttpRequest<Map<String, String>> httpRequest = HttpRequest.POST("/query", request.getQueries());
         HttpResponse<QueryResponse> response = client.toBlocking().exchange(httpRequest, QueryResponse.class);
 
         assertEquals(HttpStatus.OK, response.getStatus());
@@ -49,8 +49,8 @@ class QueryControllerTest {
 
     @Test
     void testMissingCypherFieldReturnsError() {
-        QueryRequest request = new QueryRequest(); // cypher remains null
-        HttpRequest<QueryRequest> httpRequest = HttpRequest.POST("/query", request);
+        Map<String, String> request = Collections.emptyMap();
+        HttpRequest<Map<String, String>> httpRequest = HttpRequest.POST("/query", request);
 
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(httpRequest, QueryResponse.class));
@@ -62,9 +62,8 @@ class QueryControllerTest {
 
     @Test
     void testEmptyCypherReturnsError() {
-        QueryRequest request = new QueryRequest();
-        request.setCypher("");
-        HttpRequest<QueryRequest> httpRequest = HttpRequest.POST("/query", request);
+        Map<String, String> request = Collections.singletonMap("cypher", "");
+        HttpRequest<Map<String, String>> httpRequest = HttpRequest.POST("/query", request);
 
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(httpRequest, QueryResponse.class));
