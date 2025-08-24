@@ -18,11 +18,14 @@ public class QueryHandlerRegistry {
     }
 
     /**
-     * Convenience constructor used by DI to register the default Cypher handler.
+     * Convenience constructor used by DI to register the built-in handlers.
      */
     @Inject
-    public QueryHandlerRegistry(CypherQueryHandler cypherHandler) {
-        this(Map.of("cypher", cypherHandler));
+    public QueryHandlerRegistry(CypherQueryHandler cypherHandler, SqlQueryHandler sqlHandler) {
+        this(Map.of(
+                "cypher", cypherHandler,
+                "sql", sqlHandler
+        ));
     }
 
     public Optional<QueryHandler> getHandler(String key) {

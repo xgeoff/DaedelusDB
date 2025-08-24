@@ -26,7 +26,7 @@ class QueryControllerTest {
 
     @Test
     void testPostCypherQueryReturnsStructuredResults() {
-        QueryRequest request = new QueryRequest("cypher", "MATCH (n) RETURN n");
+        QueryRequest request = QueryRequest.of("cypher", "MATCH (n) RETURN n");
 
         HttpRequest<QueryRequest> httpRequest = HttpRequest.POST("/query", request);
         HttpResponse<QueryResponse> response = client.toBlocking().exchange(httpRequest, QueryResponse.class);
@@ -46,8 +46,26 @@ class QueryControllerTest {
     }
 
     @Test
+    void testPostSqlQueryInvokesSqlHandler() {
+        QueryRequest request = QueryRequest.of("sql", "SELECT * FROM Person");
+
+        HttpRequest<QueryRequest> httpRequest = HttpRequest.POST("/query", request);
+        HttpResponse<QueryResponse> response = client.toBlocking().exchange(httpRequest, QueryResponse.class);
+
+        assertEquals(HttpStatus.OK, response.getStatus());
+        QueryResponse body = response.body();
+        assertNotNull(body);
+        assertFalse(body.getResults().isEmpty());
+
+        Map<String, Node> row = body.getResults().get(0);
+        Node node = row.get("row");
+        assertNotNull(node);
+        assertEquals("Processed SQL query: SELECT * FROM Person", node.getProperties().get("result"));
+    }
+
+    @Test
     void testMissingQueryTypeReturnsError() {
-        QueryRequest request = new QueryRequest(null, "MATCH (n) RETURN n");
+        QueryRequest request = new QueryRequest();
         HttpRequest<QueryRequest> httpRequest = HttpRequest.POST("/query", request);
 
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class,
@@ -60,7 +78,7 @@ class QueryControllerTest {
 
     @Test
     void testEmptyQueryReturnsError() {
-        QueryRequest request = new QueryRequest("cypher", "");
+        QueryRequest request = QueryRequest.of("cypher", "");
         HttpRequest<QueryRequest> httpRequest = HttpRequest.POST("/query", request);
 
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class,
@@ -73,7 +91,7 @@ class QueryControllerTest {
 
     @Test
     void testUnsupportedQueryTypeReturnsError() {
-        QueryRequest request = new QueryRequest("sql", "SELECT 1");
+        QueryRequest request = QueryRequest.of("foo", "bar");
         HttpRequest<QueryRequest> httpRequest = HttpRequest.POST("/query", request);
 
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class,
