@@ -1016,7 +1016,7 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
         initialize(file, pagePoolSize);
 
         if (multiclientSupport) {
-            beginThreadTransaction(readOnly ? READ_ONLY_TRANSACTION : READ_WRITE_TRANSACTION);
+            beginThreadTransaction(readOnly ? TransactionMode.READ_ONLY : TransactionMode.READ_WRITE);
         }
         byte[] buf = new byte[Header.sizeof];
         int rc = read(0, buf);
@@ -2700,9 +2700,9 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
     public void beginSerializableTransaction()
     {
         if (multiclientSupport) {
-            beginThreadTransaction(READ_WRITE_TRANSACTION);
+            beginThreadTransaction(TransactionMode.READ_WRITE);
         } else {
-            beginThreadTransaction(SERIALIZABLE_TRANSACTION);
+            beginThreadTransaction(TransactionMode.SERIALIZABLE);
         }
     }
 
@@ -2722,27 +2722,31 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
         rollbackThreadTransaction();
     }
 
-    public void beginThreadTransaction(int mode)
+    public void beginThreadTransaction(TransactionMode mode)
     {
         switch (mode) {
-        case SERIALIZABLE_TRANSACTION:
+        case SERIALIZABLE:
             if (multiclientSupport) {
                 throw new IllegalArgumentException("Illegal transaction mode");
             }
             useSerializableTransactions = true;
-            getTransactionContext().nested += 1;;
+            getTransactionContext().nested += 1;
             break;
-        case EXCLUSIVE_TRANSACTION:
-        case COOPERATIVE_TRANSACTION:
+        case EXCLUSIVE:
+        case READ_WRITE:
+        case COOPERATIVE:
+        case READ_ONLY: {
+            boolean exclusive = (mode == TransactionMode.EXCLUSIVE || mode == TransactionMode.READ_WRITE);
+            boolean readOnly = (mode == TransactionMode.READ_ONLY || mode == TransactionMode.COOPERATIVE);
             if (multiclientSupport) {
-                if (mode ==  EXCLUSIVE_TRANSACTION) {
+                if (exclusive) {
                     transactionLock.exclusiveLock();
                 } else {
                     transactionLock.sharedLock();
                 }
                 synchronized (transactionMonitor) {
                     if (nNestedTransactions++ == 0) {
-                        lock(mode == READ_ONLY_TRANSACTION);
+                        lock(readOnly);
                         byte[] buf = new byte[Header.sizeof];
                         int rc = read(0, buf);
                         if (rc > 0 && rc < Header.sizeof) {
@@ -2780,13 +2784,14 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
                     }
                     nNestedTransactions += 1;
                 }
-                if (mode == EXCLUSIVE_TRANSACTION) {
+                if (exclusive) {
                     transactionLock.exclusiveLock();
                 } else {
                     transactionLock.sharedLock();
                 }
             }
             break;
+        }
         default:
             throw new IllegalArgumentException("Illegal transaction mode");
         }

@@ -645,8 +645,9 @@ public interface Storage extends StorageLifecycle, TransactionManager, BackupSer
      * <TD>Supports access to the same database file by multiple applications.
      * In this case Perst will use file locking to synchronize access to the database file.
      * An application MUST wrap any access to the database with  beginThreadThreansaction/endThreadTransaction 
-     * methods. For read only access use READ_ONLY_TRANSACTION mode and if transaction may modify database then
-     * READ_WRITE_TRANSACTION mode should be used.
+     * methods. For read only access use {@link TransactionMode#READ_ONLY} mode and if
+     * transaction may modify database then {@link TransactionMode#READ_WRITE} mode should
+     * be used.
      * </TD></TR>
      * <TR><TD><code>perst.reload.objects.on.rollback</code></TD><TD>Boolean</TD><TD>false</TD>
      * <TD>By default, Perst doesn't reload modified objects after a transaction

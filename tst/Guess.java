@@ -80,21 +80,15 @@ public class Guess extends Persistent {
 
         db.open("guess.dbs", 4*1024*1024, "GUESS");
         
-        while (askQuestion("Think of an animal. Ready (y/n) ? ")) { 
-            if (multiclient) { 
-                db.beginThreadTransaction(Storage.READ_WRITE_TRANSACTION);
-            }
-            Guess root = (Guess)db.getRoot();
-            if (root == null) { 
-                root = whoIsIt(null);
-                db.setRoot(root);
-            } else { 
-                root.dialog();
-            }
-            if (multiclient) { 
-                db.endThreadTransaction();
-            } else { 
-                db.commit();
+        while (askQuestion("Think of an animal. Ready (y/n) ? ")) {
+            try (Transaction tx = db.beginTransaction(TransactionMode.READ_WRITE)) {
+                Guess root = (Guess)db.getRoot();
+                if (root == null) {
+                    root = whoIsIt(null);
+                    db.setRoot(root);
+                } else {
+                    root.dialog();
+                }
             }
         }
         

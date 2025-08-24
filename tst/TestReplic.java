@@ -83,24 +83,24 @@ public class TestReplic {
             db.open("slave.dbs", pagePoolSize);         
             long total = 0;
             int n = 0;
-            while (db.isConnected()) { 
+            while (db.isConnected()) {
                 db.waitForModification();
-                db.beginThreadTransaction(Storage.REPLICATION_SLAVE_TRANSACTION);
-                FieldIndex<Record> root = (FieldIndex<Record>)db.getRoot();
-                if (root != null && root.size() == nRecords) {
-                    long start = System.currentTimeMillis();
-                    Iterator<Record> iterator = root.iterator();
-                    int prevKey = iterator.next().key;
-                    for (i = 1; iterator.hasNext(); i++) { 
-                        int key = iterator.next().key;
-                        Assert.that(key == prevKey+1);
-                        prevKey = key;
+                try (Transaction tx = db.beginTransaction(TransactionMode.REPLICATION_SLAVE)) {
+                    FieldIndex<Record> root = (FieldIndex<Record>)db.getRoot();
+                    if (root != null && root.size() == nRecords) {
+                        long start = System.currentTimeMillis();
+                        Iterator<Record> iterator = root.iterator();
+                        int prevKey = iterator.next().key;
+                        for (i = 1; iterator.hasNext(); i++) {
+                            int key = iterator.next().key;
+                            Assert.that(key == prevKey+1);
+                            prevKey = key;
+                        }
+                        Assert.that(i == nRecords);
+                        n += 1;
+                        total += (System.currentTimeMillis() - start);
                     }
-                    Assert.that(i == nRecords);
-                    n += 1;
-                    total += (System.currentTimeMillis() - start);
                 }
-                db.endThreadTransaction();
             }
             db.close();
             System.out.println("Elapsed time for " + n + " iterations: " + total + " milliseconds");

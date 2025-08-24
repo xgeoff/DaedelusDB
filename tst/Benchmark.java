@@ -41,8 +41,8 @@ public class Benchmark {
             db.open("benchmark.dbs", pagePoolSize);
         }
 
-        if (serializableTransaction) { 
-            db.beginThreadTransaction(Storage.SERIALIZABLE_TRANSACTION);
+        if (serializableTransaction) {
+            db.beginThreadTransaction(TransactionMode.SERIALIZABLE);
         }
             
         Indices root = (Indices)db.getRoot();
@@ -60,10 +60,10 @@ public class Benchmark {
             intIndex.put(new Key(rec.intKey), rec);                
         }
         
-        if (serializableTransaction) { 
+        if (serializableTransaction) {
             db.endThreadTransaction();
-            db.beginThreadTransaction(Storage.SERIALIZABLE_TRANSACTION);
-        } else { 
+            db.beginThreadTransaction(TransactionMode.SERIALIZABLE);
+        } else {
             db.commit();
         }
         //db.gc();
