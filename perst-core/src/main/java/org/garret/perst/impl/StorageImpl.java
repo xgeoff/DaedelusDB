@@ -5,6 +5,11 @@ import org.garret.perst.fulltext.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.io.*;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.*;
 
 public class StorageImpl implements Storage {
@@ -904,33 +909,23 @@ public class StorageImpl implements Storage {
         }
     }
 
-    public void open(String filePath) {
+    public void open(Path filePath) {
         open(filePath, DEFAULT_PAGE_POOL_SIZE);
     }
 
-    public void open(IFile file) {
-        open(file, DEFAULT_PAGE_POOL_SIZE);
-    }
-
-    public synchronized void open(String filePath, long pagePoolSize) {
-        IFile file = filePath.startsWith("@")
-            ? (IFile)new MultiFile(filePath.substring(1), readOnly, noFlush)
-            : (IFile)new OSFile(filePath, readOnly, noFlush);
+    public synchronized void open(Path filePath, long pagePoolSize) {
         try {
-            open(file, pagePoolSize);
-        } catch (StorageError ex) {
-            file.close();
-            throw ex;
-        }
-    }
-
-    public synchronized void open(String filePath, long pagePoolSize, String cryptKey) {
-        Rc4File file = new Rc4File(filePath, readOnly, noFlush, cryptKey);
-        try {
-            open(file, pagePoolSize);
-        } catch (StorageError ex) {
-            file.close();
-            throw ex;
+            FileChannel ch = readOnly
+                ? FileChannel.open(filePath, StandardOpenOption.READ)
+                : FileChannel.open(filePath, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+            try {
+                open(ch, pagePoolSize);
+            } catch (StorageError ex) {
+                ch.close();
+                throw ex;
+            }
+        } catch (IOException x) {
+            throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
         }
     }
 
@@ -962,10 +957,10 @@ public class StorageImpl implements Storage {
     }
 
 
-    protected void initialize(IFile file, long pagePoolSize) {
+    protected void initialize(FileChannel file, long pagePoolSize) {
         this.file = file;
         if (lockFile && !multiclientSupport) {
-            if (!file.tryLock(readOnly)) {
+            if (!tryLock(readOnly)) {
                 throw new StorageError(StorageError.STORAGE_IS_USED);
             }
         }
@@ -1004,14 +999,14 @@ public class StorageImpl implements Storage {
 
         header = new Header();
         pool = new PagePool((int)(pagePoolSize/Page.pageSize), pagePoolLruLimit);
-        pool.open(file);
+        pool.open(file, noFlush);
 
         writerThread = Thread.currentThread();
         writerQueue = new LinkedBlockingQueue<Runnable>();
         writerThreadRunning = false;
     }
 
-    public synchronized void open(IFile file, long pagePoolSize) {
+    public synchronized void open(FileChannel file, long pagePoolSize) {
         Page pg;
         int i;
 
@@ -1024,9 +1019,8 @@ public class StorageImpl implements Storage {
             beginThreadTransaction(readOnly ? READ_ONLY_TRANSACTION : READ_WRITE_TRANSACTION);
         }
         byte[] buf = new byte[Header.sizeof];
-        int rc = file.read(0, buf);
-        int corruptionError = (file instanceof Rc4File || file instanceof CompressedReadWriteFile)
-            ? StorageError.WRONG_CIPHER_KEY : StorageError.DATABASE_CORRUPTED;
+        int rc = read(0, buf);
+        int corruptionError = StorageError.DATABASE_CORRUPTED;
         if (rc > 0 && rc < Header.sizeof) {
             throw new StorageError(corruptionError);
         }
@@ -1173,6 +1167,49 @@ public class StorageImpl implements Storage {
             endThreadTransaction();
         } else {
             commit(); // commit scheme changes
+        }
+    }
+
+    private int read(long pos, byte[] buf) {
+        try {
+            long size = file.size();
+            if (pos >= size) {
+                return 0;
+            }
+            int len = (int)Math.min(buf.length, size - pos);
+            MappedByteBuffer mbb = file.map(FileChannel.MapMode.READ_ONLY, pos, len);
+            mbb.get(buf, 0, len);
+            return len;
+        } catch (IOException x) {
+            throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
+        }
+    }
+
+    private boolean tryLock(boolean shared) {
+        try {
+            fileLock = file.tryLock(0, Long.MAX_VALUE, shared);
+            return fileLock != null;
+        } catch (IOException x) {
+            return true;
+        }
+    }
+
+    private void lock(boolean shared) {
+        try {
+            fileLock = file.lock(0, Long.MAX_VALUE, shared);
+        } catch (IOException x) {
+            throw new StorageError(StorageError.LOCK_FAILED, x);
+        }
+    }
+
+    private void unlock() {
+        try {
+            if (fileLock != null) {
+                fileLock.release();
+                fileLock = null;
+            }
+        } catch (IOException x) {
+            throw new StorageError(StorageError.LOCK_FAILED, x);
         }
     }
 
@@ -2705,9 +2742,9 @@ public class StorageImpl implements Storage {
                 }
                 synchronized (transactionMonitor) {
                     if (nNestedTransactions++ == 0) {
-                        file.lock(mode == READ_ONLY_TRANSACTION);
+                        lock(mode == READ_ONLY_TRANSACTION);
                         byte[] buf = new byte[Header.sizeof];
-                        int rc = file.read(0, buf);
+                        int rc = read(0, buf);
                         if (rc > 0 && rc < Header.sizeof) {
                             throw new StorageError(StorageError.DATABASE_CORRUPTED);
                         }
@@ -2771,7 +2808,7 @@ public class StorageImpl implements Storage {
                     if (nNestedTransactions == 1) {
                         commit();
                         pool.flush();
-                        file.unlock();
+                        unlock();
                     }
                     nNestedTransactions -= 1;
                 }
@@ -2852,7 +2889,7 @@ public class StorageImpl implements Storage {
             synchronized (transactionMonitor) {
                 transactionLock.reset();
                 rollback();
-                file.unlock();
+                unlock();
                 nNestedTransactions = 0;
             }
             return;
@@ -5459,7 +5496,8 @@ public class StorageImpl implements Storage {
     volatile boolean writerThreadRunning;
 
     long      transactionId;
-    IFile     file;
+    FileChannel file;
+    FileLock   fileLock;
 
     int       nNestedTransactions;
     int       nBlockedTransactions;
