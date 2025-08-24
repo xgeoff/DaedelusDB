@@ -17,13 +17,14 @@ public class QueryController {
     @Post
     @Produces(MediaType.APPLICATION_JSON)
     public QueryResponse handleQuery(@Body QueryRequest request) {
-        String query = request.getCypher();
+        String queryType = request.getQueryType();
+        String query = request.getQuery();
 
-        if (query == null || query.isEmpty()) {
+        if (queryType == null || query == null || query.isEmpty()) {
             throw new IllegalArgumentException("Missing query payload");
         }
 
-        return registry.getHandler("cypher")
+        return registry.getHandler(queryType)
                 .map(handler -> handler.handle(query))
                 .orElseThrow();
     }
