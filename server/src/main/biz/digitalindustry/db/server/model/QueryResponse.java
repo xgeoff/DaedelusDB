@@ -2,8 +2,10 @@ package biz.digitalindustry.db.server.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.micronaut.core.annotation.Introspected;
 import java.util.*;
 
+@Introspected
 public class QueryResponse {
     private List<Map<String, Node>> results;
 

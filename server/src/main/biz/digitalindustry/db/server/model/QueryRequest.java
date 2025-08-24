@@ -1,5 +1,8 @@
 package biz.digitalindustry.db.server.model;
 
+import io.micronaut.core.annotation.Introspected;
+
+@Introspected
 public class QueryRequest {
     private String cypher;
 
