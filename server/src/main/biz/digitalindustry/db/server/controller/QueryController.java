@@ -22,7 +22,7 @@ public class QueryController {
         }
 
         return registry.getHandler("cypher")
-                .map(handler -> new QueryResponse(handler.handle(query)))
+                .map(handler -> handler.handle(query))
                 .orElseThrow();
     }
 }
