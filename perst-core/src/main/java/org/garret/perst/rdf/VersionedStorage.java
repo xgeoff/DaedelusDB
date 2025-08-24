@@ -283,7 +283,7 @@ public class VersionedStorage
     
     class ReferenceIterator implements Iterator {
         PropDef[]     defs;
-        Iterator[]    iterators;
+        Iterator<?>[]    iterators;
         int           pos;
         Thing         currThing;
         SearchKind    kind;
@@ -291,12 +291,12 @@ public class VersionedStorage
         DatabaseRoot  root;
         HashSet       visited;
 
-        public ReferenceIterator(DatabaseRoot root, PropDef[] defs, Iterator iterator, SearchKind kind, Date timestamp) {
+        public ReferenceIterator(DatabaseRoot root, PropDef[] defs, Iterator<?> iterator, SearchKind kind, Date timestamp) {
             this.root = root;
             this.defs = defs;
             this.kind = kind;
             this.timestamp = timestamp;
-            iterators = new Iterator[defs.length+1];
+            iterators = new Iterator<?>[defs.length+1];
             iterators[iterators.length-1] = iterator;
             visited = new HashSet();
             pos = iterators.length-1;
@@ -527,19 +527,19 @@ public class VersionedStorage
          root.exclusiveLock();
      }
 
-     static class SearchResult implements Iterator {
+    static class SearchResult implements Iterator {
          org.garret.perst.VersionHistory type;
          String         uri;
          NameVal[]      patterns;
          SearchKind     kind;
          Date           timestamp;
-         Iterator       iterator;
+         Iterator<?>       iterator;
          Thing          currThing;
          int            currVersion;
          Link           currHistory;
          DatabaseRoot   root;
          
-         public SearchResult(DatabaseRoot root, org.garret.perst.VersionHistory type, String uri, NameVal[] patterns, SearchKind kind, Date timestamp, Iterator iterator)
+         public SearchResult(DatabaseRoot root, org.garret.perst.VersionHistory type, String uri, NameVal[] patterns, SearchKind kind, Date timestamp, Iterator<?> iterator)
          {
              this.root = root;
              this.type = type;    

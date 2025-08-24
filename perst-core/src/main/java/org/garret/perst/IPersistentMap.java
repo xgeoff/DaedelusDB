@@ -5,7 +5,7 @@ import java.util.*;
 /**
  * Interface of persistent map
  */
-public interface IPersistentMap<K extends Comparable,V> extends SortedMap<K,V>, IPersistent, IResource
+public interface IPersistentMap<K extends Comparable<? super K>,V> extends SortedMap<K,V>, IPersistent, IResource
 {
     /**
      * Get entry for the specified key. 

@@ -66,7 +66,7 @@ public interface Storage extends StorageLifecycle, TransactionManager, BackupSer
      * @param iterator persistent objects iterator which is used to construct bitmap
      * @return bitmap for this selection
      */
-    public Bitmap createBitmap(Iterator iterator);
+    public Bitmap createBitmap(Iterator<?> iterator);
 
     /**
      * Create scalable persistent map.
@@ -75,7 +75,7 @@ public interface Storage extends StorageLifecycle, TransactionManager, BackupSer
      * @param keyType map key type
      * @return scalable map implementation
      */
-    public <K extends Comparable, V> IPersistentMap<K,V> createMap(Class keyType);
+    public <K extends Comparable<? super K>, V> IPersistentMap<K,V> createMap(Class<K> keyType);
 
     /**
      * Create scalable persistent map.
@@ -85,7 +85,7 @@ public interface Storage extends StorageLifecycle, TransactionManager, BackupSer
      * @param initialSize initial allocated size of the list
      * @return scalable map implementation
      */
-    public <K extends Comparable, V> IPersistentMap<K,V> createMap(Class keyType, int initialSize);
+    public <K extends Comparable<? super K>, V> IPersistentMap<K,V> createMap(Class<K> keyType, int initialSize);
 
     /**
      * Create new peristent set. Implementation of this set is based on B-Tree so it can efficiently

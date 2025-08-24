@@ -1795,7 +1795,7 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
         return new QueryImpl<T>(this);
     }
 
-    public Bitmap createBitmap(Iterator iterator) {
+    public Bitmap createBitmap(Iterator<?> iterator) {
         return new Bitmap(this, iterator);
     }
 
@@ -1839,11 +1839,11 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
         return new PersistentHashImpl<K,V>(this, pageSize, loadFactor);
     }
 
-    public <K extends Comparable, V> IPersistentMap<K, V> createMap(Class keyType) {
+    public <K extends Comparable<? super K>, V> IPersistentMap<K, V> createMap(Class<K> keyType) {
         return createMap(keyType, 4);
     }
 
-    public <K extends Comparable, V> IPersistentMap<K, V> createMap(Class keyType, int initialSize) {
+    public <K extends Comparable<? super K>, V> IPersistentMap<K, V> createMap(Class<K> keyType, int initialSize) {
         if (!opened) {
             throw new StorageError(StorageError.STORAGE_NOT_OPENED);
         }

@@ -65,7 +65,7 @@ public class TestMap {
         if (root == null) { 
             root = new Indices();
             root.strMap = db.createMap(String.class);
-            root.intMap = db.createMap(long.class);
+            root.intMap = db.createMap(Long.class);
             root.objMap = db.createMap(RecordKey.class);
             db.setRoot(root);
         }

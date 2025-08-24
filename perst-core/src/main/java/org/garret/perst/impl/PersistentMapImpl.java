@@ -2,7 +2,7 @@ package org.garret.perst.impl;
 import  org.garret.perst.*;
 import  java.util.*;
 
-class PersistentMapImpl<K extends Comparable, V> extends PersistentResource implements IPersistentMap<K, V>
+class PersistentMapImpl<K extends Comparable<? super K>, V> extends PersistentResource implements IPersistentMap<K, V>
 {
     IPersistent index;
     Object      keys;
@@ -15,14 +15,14 @@ class PersistentMapImpl<K extends Comparable, V> extends PersistentResource impl
 
     static final int BTREE_TRESHOLD = 128;
 
-    PersistentMapImpl(Storage storage, Class keyType, int initialSize) { 
+    PersistentMapImpl(Storage storage, Class<K> keyType, int initialSize) {
         super(storage);
         type = getTypeCode(keyType);
         keys = new Comparable[initialSize];
         values = storage.<V>createLink(initialSize);
     }
 
-   static class PersistentMapEntry<K extends Comparable,V> extends Persistent implements Entry<K,V> { 
+   static class PersistentMapEntry<K extends Comparable<? super K>,V> extends Persistent implements Entry<K,V> {
         K key;
         V value;
 
@@ -48,13 +48,14 @@ class PersistentMapImpl<K extends Comparable, V> extends PersistentResource impl
         PersistentMapEntry() {}
     }
 
-    static class PersistentMapComparator<K extends Comparable, V> extends PersistentComparator<PersistentMapEntry<K,V>> { 
+    static class PersistentMapComparator<K extends Comparable<? super K>, V> extends PersistentComparator<PersistentMapEntry<K,V>> {
         public int compareMembers(PersistentMapEntry<K,V> m1, PersistentMapEntry<K,V> m2) {
             return m1.key.compareTo(m2.key);
         }
 
+        @SuppressWarnings("unchecked")
         public int compareMemberWithKey(PersistentMapEntry<K,V> mbr, Object key) {
-            return mbr.key.compareTo(key);
+            return mbr.key.compareTo((K)key);
         }
     }
 
