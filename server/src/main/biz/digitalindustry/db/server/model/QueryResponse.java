@@ -1,13 +1,22 @@
 package biz.digitalindustry.db.server.model;
 
-public class QueryResponse {
-    private String result;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.*;
 
-    public QueryResponse(String result) {
-        this.result = result;
+public class QueryResponse {
+    private List<Map<String, Node>> results;
+
+    public QueryResponse() {
+        this.results = new ArrayList<>();
     }
 
-    public String getResult() {
-        return result;
+    @JsonCreator
+    public QueryResponse(@JsonProperty("results") List<Map<String, Node>> results) {
+        this.results = results;
+    }
+
+    public List<Map<String, Node>> getResults() {
+        return results;
     }
 }

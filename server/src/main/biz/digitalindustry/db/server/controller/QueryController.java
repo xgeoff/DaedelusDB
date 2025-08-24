@@ -1,8 +1,8 @@
 package biz.digitalindustry.db.server.controller;
 
-import handler.QueryHandlerRegistry;
-import model.QueryRequest;
-import model.QueryResponse;
+import biz.digitalindustry.db.server.model.QueryRequest;
+import biz.digitalindustry.db.server.model.QueryResponse;
+import biz.digitalindustry.db.server.queryhandler.QueryHandlerRegistry;
 import io.micronaut.http.annotation.*;
 
 @Controller("/query")
