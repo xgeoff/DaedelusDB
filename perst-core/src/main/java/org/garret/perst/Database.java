@@ -309,7 +309,7 @@ public class Database implements IndexProvider {
             boolean exclusiveLockSet = false;           
             for (Class c = cls; c != Object.class; c = c.getSuperclass()) { 
                 Table t = tables.get(c);
-                if (t == null && c != PinnedPersistent.class && (globalClassExtent || c != Persistent.class)) { 
+                if (t == null && (globalClassExtent || c != Persistent.class)) { 
                     if (multithreaded && !exclusiveLockSet) { 
                         metadata.unlock(); // try to avoid deadlock caused by concurrent insertion of objects
                         exclusiveLockSet = true;
