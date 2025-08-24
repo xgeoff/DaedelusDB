@@ -13,7 +13,6 @@ import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,10 +26,9 @@ class QueryControllerTest {
 
     @Test
     void testPostCypherQueryReturnsStructuredResults() {
-        QueryRequest request = new QueryRequest();
-        request.addQuery("cypher", "MATCH (n) RETURN n");
+        QueryRequest request = new QueryRequest("cypher", "MATCH (n) RETURN n");
 
-        HttpRequest<Map<String, String>> httpRequest = HttpRequest.POST("/query", request.getQueries());
+        HttpRequest<QueryRequest> httpRequest = HttpRequest.POST("/query", request);
         HttpResponse<QueryResponse> response = client.toBlocking().exchange(httpRequest, QueryResponse.class);
 
         assertEquals(HttpStatus.OK, response.getStatus());
@@ -48,29 +46,42 @@ class QueryControllerTest {
     }
 
     @Test
-    void testMissingCypherFieldReturnsError() {
-        Map<String, String> request = Collections.emptyMap();
-        HttpRequest<Map<String, String>> httpRequest = HttpRequest.POST("/query", request);
+    void testMissingQueryTypeReturnsError() {
+        QueryRequest request = new QueryRequest(null, "MATCH (n) RETURN n");
+        HttpRequest<QueryRequest> httpRequest = HttpRequest.POST("/query", request);
 
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(httpRequest, QueryResponse.class));
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, ex.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
         String body = ex.getResponse().getBody(String.class).orElse("");
-        assertTrue(body.contains("Missing query payload"));
+        assertTrue(body.contains("queryType"));
     }
 
     @Test
-    void testEmptyCypherReturnsError() {
-        Map<String, String> request = Collections.singletonMap("cypher", "");
-        HttpRequest<Map<String, String>> httpRequest = HttpRequest.POST("/query", request);
+    void testEmptyQueryReturnsError() {
+        QueryRequest request = new QueryRequest("cypher", "");
+        HttpRequest<QueryRequest> httpRequest = HttpRequest.POST("/query", request);
 
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(httpRequest, QueryResponse.class));
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, ex.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
         String body = ex.getResponse().getBody(String.class).orElse("");
-        assertTrue(body.contains("Missing query payload"));
+        assertTrue(body.contains("query"));
+    }
+
+    @Test
+    void testUnsupportedQueryTypeReturnsError() {
+        QueryRequest request = new QueryRequest("sql", "SELECT 1");
+        HttpRequest<QueryRequest> httpRequest = HttpRequest.POST("/query", request);
+
+        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(httpRequest, QueryResponse.class));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        String body = ex.getResponse().getBody(String.class).orElse("");
+        assertTrue(body.contains("Unsupported query type"));
     }
 }
 
