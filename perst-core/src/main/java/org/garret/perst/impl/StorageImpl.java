@@ -4548,7 +4548,7 @@ public class StorageImpl implements Storage {
             } else if (obj instanceof Collection && (!serializeSystemCollections || t.getName().startsWith("java.util."))) {
                 ClassDescriptor valueDesc = getClassDescriptor(obj.getClass());
                 offs = buf.packI4(offs, -ClassDescriptor.tpValueTypeBias - valueDesc.getOid());
-                Collection c = (Collection)obj;
+                Collection<?> c = (Collection<?>)obj;
                 offs = buf.packI4(offs, c.size());
                 for (Object elem : c) {
                     offs = swizzle(buf, offs, elem);
@@ -4556,10 +4556,10 @@ public class StorageImpl implements Storage {
             } else if (obj instanceof Map && (!serializeSystemCollections || t.getName().startsWith("java.util."))) {
                 ClassDescriptor valueDesc = getClassDescriptor(obj.getClass());
                 offs = buf.packI4(offs, -ClassDescriptor.tpValueTypeBias - valueDesc.getOid());
-                Map map = (Map)obj;
+                Map<?,?> map = (Map<?,?>)obj;
                 offs = buf.packI4(offs, map.size());
                 for (Object entry : map.entrySet()) {
-                    Map.Entry e = (Map.Entry)entry;
+                    Map.Entry<?,?> e = (Map.Entry<?,?>)entry;
                     offs = swizzle(buf, offs, e.getKey());
                     offs = swizzle(buf, offs, e.getValue());
                 }

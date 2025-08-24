@@ -17,6 +17,6 @@ public class NodeQuery {
     }
 
     public List<GraphNode> collect() {
-        return nodes;
+        return List.copyOf(nodes);
     }
 }
