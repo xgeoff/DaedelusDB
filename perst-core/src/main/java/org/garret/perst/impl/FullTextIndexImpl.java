@@ -46,18 +46,19 @@ public class FullTextIndexImpl extends PersistentResource implements FullTextInd
             throw new UnsupportedOperationException();
         }
 
-        KeywordIterator(Iterator iterator) {
+        KeywordIterator(Iterator<Map.Entry<?, ?>> iterator) {
             this.iterator = iterator;
         }
 
-        Iterator iterator;
+        Iterator<Map.Entry<?, ?>> iterator;
     }
 
 
+    @SuppressWarnings("unchecked")
     public Iterator<Keyword> getKeywords(String prefix) {
-        return new KeywordIterator(inverseIndex.entryIterator(new Key(prefix), 
-                                                              new Key(prefix + Character.MAX_VALUE, false), 
-                                                              Index.ASCENT_ORDER));
+        return new KeywordIterator((Iterator<Map.Entry<?, ?>>)inverseIndex.entryIterator(new Key(prefix),
+                                                                                      new Key(prefix + Character.MAX_VALUE, false),
+                                                                                      Index.ASCENT_ORDER));
     }
     
     static class DocumentOccurrences extends Persistent {

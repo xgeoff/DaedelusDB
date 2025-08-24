@@ -152,7 +152,7 @@ public class Bitmap implements Iterable
      * @param sto storage of persistent object selected by this bitmap
      * @param i iterator through persistent object which is used to initialize bitmap
      */
-    public Bitmap(Storage sto, Iterator i) 
+    public Bitmap(Storage sto, Iterator<?> i)
     { 
         storage = sto;
         n_bits = sto.getMaxOid();

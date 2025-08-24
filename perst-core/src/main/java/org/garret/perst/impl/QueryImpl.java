@@ -6,8 +6,8 @@ import java.text.*;
 import java.util.Arrays.*;
 import org.garret.perst.*;
 
-class FilterIterator<T> extends IterableIterator<T> { 
-    Iterator     iterator;
+class FilterIterator<T> extends IterableIterator<T> {
+    Iterator<?>     iterator;
     Node         condition;
     QueryImpl<T> query;
     int[]        indexVar;
@@ -60,7 +60,7 @@ class FilterIterator<T> extends IterableIterator<T> {
         currObj = obj;
     }
 
-    FilterIterator(QueryImpl query, Iterator iterator, Node condition) { 
+    FilterIterator(QueryImpl query, Iterator<?> iterator, Node condition) {
         this.query = query;
         this.iterator = iterator;
         this.condition = condition;
@@ -4534,7 +4534,7 @@ public class QueryImpl<T> implements Query<T>
         return expr;
     }
 
-    final IterableIterator<T> filter(Iterator iterator, Node condition) { 
+    final IterableIterator<T> filter(Iterator<?> iterator, Node condition) {
         return new FilterIterator<T>(this, iterator, condition);
     }
 
