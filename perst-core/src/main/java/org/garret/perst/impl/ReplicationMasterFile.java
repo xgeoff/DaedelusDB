@@ -2,6 +2,10 @@ package org.garret.perst.impl;
 
 import java.io.*;
 import java.net.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.garret.perst.*;
 
@@ -292,33 +296,49 @@ public class ReplicationMasterFile implements IFile, Runnable
         return nHosts;
     }
 
+    /**
+     * Attempt to establish connection with slave node. Each retry is
+     * separated by an interruptible wait so that shutdown or interruption
+     * requests are handled without blocking the thread.
+     */
     protected void connect(int i)
     {
         String host = hosts[i];
         int colon = host.indexOf(':');
         int port = Integer.parseInt(host.substring(colon+1));
         host = host.substring(0, colon);
-        Socket socket = null; 
-        try { 
-            int maxAttempts = storage != null 
-                ? storage.slaveConnectionTimeout : MAX_CONNECT_ATTEMPTS;
-            for (int j = 0; j < maxAttempts; j++) { 
-                try { 
-                    socket = new Socket(InetAddress.getByName(host), port);
-                    if (socket != null) { 
-                        break;
-                    }
-                    Thread.sleep(CONNECTION_TIMEOUT);
-                } catch (IOException x) {}
+        Socket socket = null;
+        int maxAttempts = storage != null
+            ? storage.slaveConnectionTimeout : MAX_CONNECT_ATTEMPTS;
+        Lock lock = new ReentrantLock();
+        Condition retry = lock.newCondition();
+        for (int j = 0; j < maxAttempts && !Thread.currentThread().isInterrupted(); j++) {
+            try {
+                socket = new Socket(InetAddress.getByName(host), port);
+                break;
+            } catch (IOException x) {
+                lock.lock();
+                try {
+                    retry.await(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                } finally {
+                    lock.unlock();
+                }
             }
-        } catch (InterruptedException x) {}
-            
-        if (socket != null) { 
-            try { 
+        }
+
+        if (Thread.currentThread().isInterrupted()) {
+            return;
+        }
+
+        if (socket != null) {
+            try {
                 try {
                     socket.setSoLinger(true, LINGER_TIME);
                 } catch (NoSuchMethodError er) {}
-                try { 
+                try {
                     socket.setTcpNoDelay(true);
                 } catch (Exception x) {}
                 sockets[i] = socket;
