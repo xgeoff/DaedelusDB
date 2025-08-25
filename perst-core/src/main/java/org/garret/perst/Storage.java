@@ -1,6 +1,7 @@
 package org.garret.perst;
 
 import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
 import org.garret.perst.fulltext.*;
 import org.garret.perst.impl.ThreadTransactionContext;
 
@@ -487,6 +488,28 @@ public interface Storage extends StorageLifecycle, TransactionManager, BackupSer
      * @param oid object oid
      */
     public void checkReadLock(int oid);
+
+    /**
+     * Attempt to read object without waiting for a concurrent writer to
+     * release the lock. If the object is currently write locked, a
+     * {@link ConcurrentWriteException} is thrown.
+     *
+     * @param oid object oid
+     * @param cls expected class of the object
+     * @return loaded object
+     * @throws ConcurrentWriteException if the object is locked for write
+     */
+    public <T> T tryReadObject(int oid, Class<T> cls) throws ConcurrentWriteException;
+
+    /**
+     * Asynchronously read object. If the object is currently write locked the
+     * returned future is completed once the writer releases the lock.
+     *
+     * @param oid object oid
+     * @param cls expected class of the object
+     * @return future completed with the loaded object
+     */
+    public <T> CompletableFuture<T> readObjectAsync(int oid, Class<T> cls);
 
     /**
      * Explicitely make object peristent. Usually objects are made persistent
