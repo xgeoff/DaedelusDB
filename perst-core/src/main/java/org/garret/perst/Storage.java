@@ -1,135 +1,272 @@
 package org.garret.perst;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.concurrent.CompletableFuture;
 import org.garret.perst.fulltext.*;
 import org.garret.perst.impl.ThreadTransactionContext;
 
 /**
  * Object storage
  */
-public interface Storage {
-
-    /** Constant specifying that page pool should be dynamically extended to contain all database file pages. */
-    int INFINITE_PAGE_POOL = 0;
-
-    /** Constant specifying default pool size. */
-    int DEFAULT_PAGE_POOL_SIZE = 4*1024*1024;
-
+public interface Storage { 
     /**
-     * Open the storage.
-     *
-     * @param filePath path to the database file
-     * @param pagePoolSize size of page pool (in bytes). Page pool should contain at least
-     * ten 4kb pages, so minimal page pool size should be at least 40Kb. But larger page pool
-     * usually leads to better performance (unless it could not fit in memory and cause swapping).
-     * Value 0 of this parameter corresponds to an infinite page pool (all pages are cached in memory).
+     * Constant specifying that page pool should be dynamically extended 
+     * to conatins all database file pages
      */
-    void open(Path filePath, long pagePoolSize);
-
+    public static final int INFINITE_PAGE_POOL = 0;
     /**
-     * Open the storage with default page pool size.
-     *
-     * @param filePath path to the database file
+     * Constant specifying default pool size
      */
-    void open(Path filePath);
-
-    /**
-     * Check if database is opened.
-     *
-     * @return <code>true</code> if database was opened by <code>open</code> method,
-     * <code>false</code> otherwise
-     */
-    boolean isOpened();
-
-    /**
-     * Get storage root. Storage can have exactly one root object.
-     *
-     * @return root object or <code>null</code> if root is not specified
-     */
-    <T> T getRoot();
-
-    /**
-     * Set new storage root object.
-     *
-     * @param root object to become new storage root
-     */
-    void setRoot(Object root);
-
-    /**
-     * Commit transaction (if needed) and close the storage.
-     */
-    void close();
-
-    /** Commit changes done by the last transaction. */
-    void commit();
-
-    /** Rollback changes made by the last transaction. */
-    void rollback();
-
-    /** Begin per-thread transaction. */
-    void beginThreadTransaction(TransactionMode mode);
-
-    /**
-     * Convenience method returning {@link Transaction} object allowing
-     * the use of try-with-resources statement for transactions.
-     *
-     * @param mode transaction mode
-     * @return transaction handle
-     */
-    default Transaction beginTransaction(TransactionMode mode) {
-        return new Transaction(this, mode);
-    }
-
-    /** End per-thread transaction started by beginThreadTransaction method. */
-    void endThreadTransaction();
-
-    /** End per-thread cooperative transaction with specified maximal delay of transaction commit. */
-    void endThreadTransaction(int maxDelay);
-
-    /** Check if nested thread transaction is active. */
-    boolean isInsideThreadTransaction();
-
-    /** Rollback per-thread transaction. */
-    void rollbackThreadTransaction();
-
-    /** Start serializable transaction. */
-    void beginSerializableTransaction();
-
-    /** Commit serializable transaction. */
-    void commitSerializableTransaction();
-
-    /** Rollback serializable transaction. */
-    void rollbackSerializableTransaction();
-
-    /**
-     * Backup current state of database.
-     *
-     * @param out output stream to which backup is done
-     */
-    void backup(OutputStream out) throws IOException;
-
-    /**
-     * Backup current state of database to the file with specified path.
-     *
-     * @param filePath path to the backup file
-     * @param cipherKey cipher key for the encryption of the backup file, null to disable encryption
-     */
-    void backup(String filePath, String cipherKey) throws IOException;
+    public static final int DEFAULT_PAGE_POOL_SIZE = 4*1024*1024;
 
     /**
      * Get Perst version (for example 435 for release 4.35)
      */
     public int getPerstVersion();
 
+
+    /**
+     * Open the storage
+     * @param filePath path to the database file
+     * @param pagePoolSize size of page pool (in bytes). Page pool should contain
+     * at least ten 4kb pages, so minimal page pool size should be at least 40Kb.
+     * But larger page pool usually leads to better performance (unless it could not fit
+     * in memory and cause swapping). Value 0 of this paremeter corresponds to infinite
+     * page pool (all pages are cashed in memory). It is especially useful for in-memory
+     * database, when storage is created with NullFile.
+     * 
+     */
+    public void open(String filePath, long pagePoolSize);
+
+    /**
+     * Open the storage
+     * @param file user specific implementation of IFile interface
+     * @param pagePoolSize size of page pool (in bytes). Page pool should contain
+     * at least ten 4kb pages, so minimal page pool size should be at least 40Kb.
+     * But larger page pool ussually leads to better performance (unless it could not fit
+     * in memory and cause swapping).
+     */
+    public void open(IFile file, long pagePoolSize);
+
+    /**
+     * Open the storage with default page pool size
+     * @param file user specific implementation of IFile interface
+     */ 
+    public void open(IFile file);
+
+    /**
+     * Open the storage with default page pool size
+     * @param filePath path to the database file
+     */ 
+    public void open(String filePath);
+
+    /**
+     * Open the encrypted storage
+     * @param filePath path to the database file
+     * @param pagePoolSize size of page pool (in bytes). Page pool should contain
+     * at least then 4kb pages, so minimal page pool size should be at least 40Kb.
+     * But larger page pool usually leads to better performance (unless it could not fit
+     * in memory and cause swapping).
+     * @param cipherKey cipher key
+     */
+    public void open(String filePath, long pagePoolSize, String cipherKey);
+
+    /**
+     * Check if database is opened
+     * @return <code>true</code> if database was opened by <code>open</code> method, 
+     * <code>false</code> otherwise
+     */
+    public boolean isOpened();
+    
+    /**
+     * Get storage root. Storage can have exactly one root object. 
+     * If you need to have several root object and access them by name (as is is possible 
+     * in many other OODBMSes), you should create index and use it as root object.
+     * @return root object or <code>null</code> if root is not specified (storage is not yet initialized)
+     */
+    public Object getRoot();
+    
+    /**
+     * Set new storage root object.
+     * Previous reference to the root object is rewritten but old root is not automatically deallocated.
+     * @param root object to become new storage root. If it is not persistent yet, it is made
+     * persistent and stored in the storage
+     */
+    public void setRoot(Object root);
+
+    
+
+    /**
+     * Commit changes done by the last transaction. Transaction is started implcitlely with forst update
+     * opertation.
+     */
+    public void commit();
+
+    /**
+     * Rollback changes made by the last transaction.
+     * By default, Perst doesn't reload modified objects after a transaction
+     * rollback. In this case, the programmer should not use references to the
+     * persistent objects stored in program variables. Instead, the application
+     * should fetch the object tree from the beginning, starting from obtaining the
+     * root object using the Storage.getRoot method.
+     * Setting the "perst.reload.objects.on.rollback" property instructs Perst to
+     * reload all objects modified by the aborted (rolled back) transaction. It
+     * takes additional processing time, but in this case it is not necessary to
+     * ignore references stored in variables, unless they point to the objects
+     * created by this transactions (which were invalidated when the transaction
+     * was rolled back). Unfortunately, there is no way to prohibit access to such
+     * objects or somehow invalidate references to them. So this option should be
+     * used with care.
+     */
+    public void rollback();
+
+
+    /**
+     * Backup current state of database
+     * @param out output stream to which backup is done
+     */
+    public void backup(java.io.OutputStream out) throws java.io.IOException;
+
+    /**
+     * Backup current state of database to the file with specified path
+     * @param filePath path to the backup file
+     * @param cipherKey cipher key for the encryption oof the backup file, null to disable encryption
+     */
+    public void backup(String filePath, String cipherKey) throws java.io.IOException;
+
+    /**
+     * Exclusive per-thread transaction: each thread access database in exclusive mode
+     */
+    public static final int EXCLUSIVE_TRANSACTION   = 0;
+    /**
+     * Alias for EXCLUSIVE_TRANSACTION. In case of multiclient access, 
+     * any transaction modifying database should be exclusive.
+     */
+    public static final int READ_WRITE_TRANSACTION = EXCLUSIVE_TRANSACTION;
+    /**
+     * Cooperative mode; all threads share the same transaction. Commit will commit changes made
+     * by all threads. To make this schema work correctly, it is necessary to ensure (using locking)
+     * that no thread is performing update of the database while another one tries to perform commit.
+     * Also please notice that rollback will undo the work of all threads. 
+     */
+    public static final int COOPERATIVE_TRANSACTION = 1;
+    /**
+     * Alias for COOPERATIVE_TRANSACTION. In case of multiclient access, 
+     * only read-only transactions can be executed in parallel.
+     */
+    public static final int READ_ONLY_TRANSACTION = COOPERATIVE_TRANSACTION;
+    /**
+     * Serializable per-thread transaction. Unlike exclusive mode, threads can concurrently access database, 
+     * but effect will be the same as them work exclusively.
+     * To provide such behavior, programmer should lock all access objects (or use hierarchical locking).
+     * When object is updated, exclusive lock should be set, otherwise shared lock is enough.
+     * Lock should be preserved until the end of transaction.
+     */
+    public static final int SERIALIZABLE_TRANSACTION = 2;
+
+    /**
+     * Read only transaction which can be started at replicastion slave node.
+     * It runs concurrently with receiving updates from master node.
+     */
+    public static final int REPLICATION_SLAVE_TRANSACTION = 3;
+
+
+    /** 
+     * Begin per-thread transaction. Three types of per-thread transactions are supported: 
+     * exclusive, cooperative and serializable. In case of exclusive transaction, only one 
+     * thread can update the database. In cooperative mode, multiple transaction can work 
+     * concurrently and commit() method will be invoked only when transactions of all threads
+     * are terminated. Serializable transactions can also work concurrently. But unlike
+     * cooperative transaction, the threads are isolated from each other. Each thread
+     * has its own associated set of modified objects and committing the transaction will cause
+     * saving only of these objects to the database. To synchronize access to the objects
+     * in case of serializable transaction programmer should use lock methods
+     * of IResource interface. Shared lock should be set before read access to any object, 
+     * and exclusive lock - before write access. Locks will be automatically released when
+     * transaction is committed (so programmer should not explicitly invoke unlock method)
+     * In this case it is guaranteed that transactions are serializable.<br>
+     * It is not possible to use <code>IPersistent.store()</code> method in
+     * serializable transactions. That is why it is also not possible to use Index and FieldIndex
+     * containers (since them are based on B-Tree and B-Tree directly access database pages
+     * and use <code>store()</code> method to assign OID to inserted object. 
+     * You should use <code>SortedCollection</code> based on T-Tree instead or alternative
+     * B-Tree implemenataion (set "perst.alternative.btree" property).
+     * @param mode <code>EXCLUSIVE_TRANSACTION</code>, <code>COOPERATIVE_TRANSACTION</code>, 
+     * <code>SERIALIZABLE_TRANSACTION</code> or <code>REPLICATION_SLAVE_TRANSACTION</code>
+     */
+    public void beginThreadTransaction(int mode);
+    
+    /**
+     * End per-thread transaction started by beginThreadTransaction method.<br>
+     * If transaction is <i>exclusive</i>, this method commits the transaction and
+     * allows other thread to proceed.<br>
+     * If transaction is <i>serializable</i>, this method commits sll changes done by this thread
+     * and release all locks set by this thread.<br>     
+     * If transaction is <i>cooperative</i>, this method decrement counter of cooperative
+     * transactions and if it becomes zero - commit the work
+     */
+    public void endThreadTransaction(); 
+
+    /**
+     * End per-thread cooperative transaction with specified maximal delay of transaction
+     * commit. When cooperative transaction is ended, data is not immediately committed to the
+     * disk (because other cooperative transaction can be active at this moment of time).
+     * Instead of it cooperative transaction counter is decremented. Commit is performed
+     * only when this counter reaches zero value. But in case of heavy load there can be a lot of
+     * requests and so a lot of active cooperative transactions. So transaction counter never reaches zero value.
+     * If system crash happens a large amount of work will be lost in this case. 
+     * To prevent such scenario, it is possible to specify maximal delay of pending transaction commit.
+     * In this case when such timeout is expired, new cooperative transaction will be blocked until
+     * transaction is committed.
+     * @param maxDelay maximal delay in milliseconds of committing transaction.  Please notice, that Perst could 
+     * not force other threads to commit their cooperative transactions when this timeout is expired. It will only
+     * block new cooperative transactions to make it possible to current transaction to complete their work.
+     * If <code>maxDelay</code> is 0, current thread will be blocked until all other cooperative trasnaction are also finished
+     * and changhes will be committed to the database.
+     */
+    public void endThreadTransaction(int maxDelay);
+   
+    /**
+     * Check if nested thread transaction is active
+     * @return true if code executing this method is inside per-thread transaction 
+     * (serializable, exclusive or coopertaive)
+     */
+    public boolean isInsideThreadTransaction();
+
+    /**
+     * Rollback per-thread transaction. It is safe to use this method only for exclusive transactions.
+     * In case of cooperative transactions, this method rollback results of all transactions.
+     */
+    public void rollbackThreadTransaction();
+
+    /**
+     * Start serializable transaction.
+     * This call is equivalent to <code>beginThreadTransaction(Storage.SERIALIZABLE_TRANSACTION)</code>
+     */
+    public void beginSerializableTransaction();
+
+    /**
+     * Commit serializable transaction. This call is equivalent to <code>endThreadTransaction</code>
+     * but it checks that serializable transaction was pereviously started using 
+     * beginSerializableTransaction() method
+     * @exception StorageError (NOT_IN_TRANSACTION) if this method is invoked outside 
+     * serializable transaction body
+     */     
+    public void commitSerializableTransaction();
+
+    /**
+     * Rollback serializable transaction. This call is equivalent to <code>rollbackThreadTransaction</code>
+     * but it checks that serializable transaction was pereviously started using 
+     * beginSerializableTransaction() method
+     * @exception StorageError (NOT_IN_TRANSACTION) if this method is invoked outside 
+     * serializable transaction body
+     */     
+    public void rollbackSerializableTransaction();
+
     /**
      * Create JSQL query. JSQL is object oriented subset of SQL allowing
      * to specify arbitrary prdicates for selecting members of Perst collections
      * @return created query object
-     */
+     */     
     public <T> Query<T> createQuery();
 
     /**
@@ -177,7 +314,7 @@ public interface Storage {
      * @param iterator persistent objects iterator which is used to construct bitmap
      * @return bitmap for this selection
      */
-    public Bitmap createBitmap(Iterator<?> iterator);
+    public Bitmap createBitmap(Iterator iterator);
 
     /**
      * Create scalable persistent map.
@@ -186,7 +323,7 @@ public interface Storage {
      * @param keyType map key type
      * @return scalable map implementation
      */
-    public <K extends Comparable<? super K>, V> IPersistentMap<K,V> createMap(Class<K> keyType);
+    public <K extends Comparable, V> IPersistentMap<K,V> createMap(Class keyType);
 
     /**
      * Create scalable persistent map.
@@ -196,7 +333,7 @@ public interface Storage {
      * @param initialSize initial allocated size of the list
      * @return scalable map implementation
      */
-    public <K extends Comparable<? super K>, V> IPersistentMap<K,V> createMap(Class<K> keyType, int initialSize);
+    public <K extends Comparable, V> IPersistentMap<K,V> createMap(Class keyType, int initialSize);
 
     /**
      * Create new peristent set. Implementation of this set is based on B-Tree so it can efficiently
@@ -553,6 +690,11 @@ public interface Storage {
 
 
     /**
+     * Commit transaction (if needed) and close the storage
+     */
+    public void close();
+
+    /**
      * Set threshold for initiation of garbage collection. By default garbage collection is disable (threshold is set to
      * Long.MAX_VALUE). If it is set to the value different from Long.MAX_VALUE, GC will be started each time when
      * delta between total size of allocated and deallocated objects exceeds specified threashold OR
@@ -598,28 +740,6 @@ public interface Storage {
      * @param oid object oid
      */
     public void checkReadLock(int oid);
-
-    /**
-     * Attempt to read object without waiting for a concurrent writer to
-     * release the lock. If the object is currently write locked, a
-     * {@link ConcurrentWriteException} is thrown.
-     *
-     * @param oid object oid
-     * @param cls expected class of the object
-     * @return loaded object
-     * @throws ConcurrentWriteException if the object is locked for write
-     */
-    public <T> T tryReadObject(int oid, Class<T> cls) throws ConcurrentWriteException;
-
-    /**
-     * Asynchronously read object. If the object is currently write locked the
-     * returned future is completed once the writer releases the lock.
-     *
-     * @param oid object oid
-     * @param cls expected class of the object
-     * @return future completed with the loaded object
-     */
-    public <T> CompletableFuture<T> readObjectAsync(int oid, Class<T> cls);
 
     /**
      * Explicitely make object peristent. Usually objects are made persistent
@@ -778,9 +898,8 @@ public interface Storage {
      * <TD>Supports access to the same database file by multiple applications.
      * In this case Perst will use file locking to synchronize access to the database file.
      * An application MUST wrap any access to the database with  beginThreadThreansaction/endThreadTransaction 
-     * methods. For read only access use {@link TransactionMode#READ_ONLY} mode and if
-     * transaction may modify database then {@link TransactionMode#READ_WRITE} mode should
-     * be used.
+     * methods. For read only access use READ_ONLY_TRANSACTION mode and if transaction may modify database then
+     * READ_WRITE_TRANSACTION mode should be used.
      * </TD></TR>
      * <TR><TD><code>perst.reload.objects.on.rollback</code></TD><TD>Boolean</TD><TD>false</TD>
      * <TD>By default, Perst doesn't reload modified objects after a transaction
