@@ -1284,11 +1284,11 @@ public class StorageImpl implements Storage {
         modified = true;
     }
 
-    final ClassDescriptor findClassDescriptor(Class cls) {
+    final ClassDescriptor findClassDescriptor(Class<?> cls) {
         return classDescMap.get(cls);
     }
 
-    final ClassDescriptor getClassDescriptor(Class cls) {
+    final ClassDescriptor getClassDescriptor(Class<?> cls) {
         ClassDescriptor desc = findClassDescriptor(cls);
         if (desc == null) {
             desc = new ClassDescriptor(this, cls);
@@ -3288,12 +3288,12 @@ public class StorageImpl implements Storage {
         }
     }
 
-    private final CustomAllocator getCustomAllocator(Class cls) {
+    private final CustomAllocator getCustomAllocator(Class<?> cls) {
         Object a = customAllocatorMap.get(cls);
         if (a != null) {
             return a == defaultAllocator ? null : (CustomAllocator)a;
         }
-        Class superclass = cls.getSuperclass();
+        Class<?> superclass = cls.getSuperclass();
         if (superclass != null) {
             CustomAllocator alloc = getCustomAllocator(superclass);
             if (alloc != null) {
@@ -3301,7 +3301,7 @@ public class StorageImpl implements Storage {
                 return alloc;
             }
         }
-        Class[] interfaces = cls.getInterfaces();
+        Class<?>[] interfaces = cls.getInterfaces();
         for (int i = 0; i < interfaces.length; i++) {
             CustomAllocator alloc = getCustomAllocator(interfaces[i]);
             if (alloc != null) {
@@ -3522,7 +3522,7 @@ public class StorageImpl implements Storage {
         return cls.cast(stub);
     }
 
-    final Object loadStub(int oid, Object obj, Class cls)
+    final Object loadStub(int oid, Object obj, Class<?> cls)
     {
         long pos = getPos(oid);
         if ((pos & (dbFreeHandleFlag|dbPageObjectFlag)) != 0) {
@@ -3578,7 +3578,7 @@ public class StorageImpl implements Storage {
             return obj;
         }
 
-        protected Class resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException {
+        protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException {
             String classLoaderName = null;
             if (loaderMap != null && (compatibilityMode & CLASS_LOADER_SERIALIZATION_COMPATIBILITY_MODE) == 0) {
                 classLoaderName = (String)readObject();
@@ -3609,7 +3609,7 @@ public class StorageImpl implements Storage {
             super(out);
         }
 
-        protected void annotateClass(Class cls) throws IOException {
+        protected void annotateClass(Class<?> cls) throws IOException {
             ClassLoader loader = cls.getClassLoader();
             writeObject((loader instanceof INamedClassLoader)
                         ? ((INamedClassLoader)loader).getName() : null);
@@ -4083,7 +4083,7 @@ public class StorageImpl implements Storage {
                 case ClassDescriptor.tpClass:
                 {
                     ArrayPos pos = new ArrayPos(body, offs);
-                    Class cls =  ClassDescriptor.loadClass(this, Bytes.unpackString(pos, encoding));
+                    Class<?> cls =  ClassDescriptor.loadClass(this, Bytes.unpackString(pos, encoding));
                     provider.set(f, obj, cls);
                     offs = pos.offs;
                     continue;
@@ -4247,7 +4247,7 @@ public class StorageImpl implements Storage {
                     if (len < 0) {
                         f.set(obj, null);
                     } else {
-                        Class elemType = f.getType().getComponentType();
+                        Class<?> elemType = f.getType().getComponentType();
                         Enum[] enumConstants = (Enum[])elemType.getEnumConstants();
                         Enum[] arr = (Enum[])Array.newInstance(elemType, len);
                         for (int j = 0; j < len; j++) {
@@ -4340,7 +4340,7 @@ public class StorageImpl implements Storage {
                     if (len < 0) {
                         provider.set(f, obj, null);
                     } else {
-                        Class elemType = f.getType().getComponentType();
+                          Class<?> elemType = f.getType().getComponentType();
                         Object[] arr = (Object[])Array.newInstance(elemType, len);
                         ArrayPos pos = new ArrayPos(body, offs);
                         for (int j = 0; j < len; j++) {
@@ -4356,7 +4356,7 @@ public class StorageImpl implements Storage {
                     if (len < 0) {
                         provider.set(f, obj, null);
                     } else {
-                        Class elemType = f.getType().getComponentType();
+                          Class<?> elemType = f.getType().getComponentType();
                         Object[] arr = (Object[])Array.newInstance(elemType, len);
                         ClassDescriptor valueDesc = fd.valueDesc;
                         for (int j = 0; j < len; j++) {
@@ -4400,7 +4400,7 @@ public class StorageImpl implements Storage {
             Bytes.pack4(buf.arr, offs+4, swizzle((IPersistent)value, buf.finalized));
             offs += 8;
         } else {
-            Class c = value.getClass();
+            Class<?> c = value.getClass();
             if (c == Boolean.class) {
                 buf.extend(offs + 5);
                 Bytes.pack4(buf.arr, offs, -2-ClassDescriptor.tpBoolean);
@@ -4493,7 +4493,7 @@ public class StorageImpl implements Storage {
         if (obj instanceof IPersistent || obj == null) {
             offs = buf.packI4(offs, swizzle(obj, buf.finalized));
         } else {
-            Class t = obj.getClass();
+            Class<?> t = obj.getClass();
             if (t == Boolean.class){
                 buf.extend(offs + 5);
                 Bytes.pack4(buf.arr, offs, -1 - ClassDescriptor.tpBoolean);
@@ -4584,7 +4584,7 @@ public class StorageImpl implements Storage {
                 offs = buf.packI4(offs, -ClassDescriptor.tpValueTypeBias - valueDesc.getOid());
                 offs = packObject(obj, valueDesc, offs, buf);
             } else if (t.isArray()) {
-                Class elemType = t.getComponentType();
+                Class<?> elemType = t.getComponentType();
                 if (elemType == byte.class) {
                     byte[] arr = (byte[])obj;
                     int len = arr.length;
