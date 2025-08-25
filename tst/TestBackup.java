@@ -20,18 +20,15 @@ public class TestBackup {
 
     static public void main(String[] args) throws Exception {   
         Storage db = StorageFactory.getInstance().createStorage();
-        StorageLifecycle life = db;
-        TransactionManager tx = db;
-        BackupService backup = db;
 
-        life.open("testbck1.dbs", pagePoolSize);
-        Indices root = (Indices)life.getRoot();
-        if (root == null) { 
+        db.open("testbck1.dbs", pagePoolSize);
+        Indices root = (Indices)db.getRoot();
+        if (root == null) {
             root = new Indices();
             root.strIndex = db.createIndex(String.class, true);
             root.intIndex = db.createFieldIndex(Record.class, "intKey", true);
             root.compoundIndex = db.createFieldIndex(Record.class, new String[]{"strKey", "intKey"}, true);
-            life.setRoot(root);
+            db.setRoot(root);
         }
         FieldIndex intIndex = root.intIndex;
         FieldIndex compoundIndex = root.compoundIndex;
@@ -49,20 +46,20 @@ public class TestBackup {
             strIndex.put(new Key(rec.strKey), rec);                
             compoundIndex.put(rec);                
         }
-        tx.commit();
+        db.commit();
         System.out.println("Elapsed time for inserting " + nRecords + " records: " 
                            + (System.currentTimeMillis() - start) + " milliseconds");
 
         start = System.currentTimeMillis();
         OutputStream out = new FileOutputStream("testbck2.dbs");
-        backup.backup(out);
+        db.backup(out);
         out.close();
 
         System.out.println("Elapsed time for backup " + (System.currentTimeMillis() - start) + " milliseconds");
-        life.close();
-        life.open("testbck2.dbs", pagePoolSize);
+        db.close();
+        db.open("testbck2.dbs", pagePoolSize);
 
-        root = (Indices)life.getRoot();
+        root = (Indices)db.getRoot();
         intIndex = root.intIndex;
         strIndex = root.strIndex;
         compoundIndex = root.compoundIndex;
@@ -84,7 +81,7 @@ public class TestBackup {
         }
         System.out.println("Elapsed time for performing " + nRecords*2 + " index searches: " 
                            + (System.currentTimeMillis() - start) + " milliseconds");
-        life.close();
+        db.close();
     }
 }
 

@@ -6,10 +6,10 @@ package org.garret.perst;
  * {@link #rollback()} will cause the transaction to roll back instead.
  */
 public class Transaction implements AutoCloseable {
-    private final TransactionManager storage;
+    private final Storage storage;
     private boolean rollback;
 
-    Transaction(TransactionManager storage, TransactionMode mode) {
+    Transaction(Storage storage, TransactionMode mode) {
         this.storage = storage;
         storage.beginThreadTransaction(mode);
     }
