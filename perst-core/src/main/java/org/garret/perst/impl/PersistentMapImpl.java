@@ -1,6 +1,7 @@
 package org.garret.perst.impl;
 import  org.garret.perst.*;
 import  java.util.*;
+import  java.time.Instant;
 
 class PersistentMapImpl<K extends Comparable<? super K>, V> extends PersistentResource implements IPersistentMap<K, V>
 {
@@ -82,11 +83,11 @@ class PersistentMapImpl<K extends Comparable<? super K>, V> extends PersistentRe
             return ClassDescriptor.tpBoolean;
         } else if (c.isEnum()) {
             return ClassDescriptor.tpEnum;
-        } else if (c.equals(Date.class)) {
+        } else if (c.equals(Date.class) || c.equals(Instant.class)) {
             return ClassDescriptor.tpDate;
         } else if (IValue.class.isAssignableFrom(c)) {
             return ClassDescriptor.tpValue;
-        } else { 
+        } else {
             return ClassDescriptor.tpObject;
         }
     }

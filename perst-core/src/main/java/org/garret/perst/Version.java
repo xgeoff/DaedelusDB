@@ -1,6 +1,6 @@
 package org.garret.perst;
 
-import java.util.Date;
+import java.time.Instant;
 
 /**
  * Base class for version of versioned object. All versions are kept in version history.
@@ -60,7 +60,8 @@ public class Version extends PersistentResource
             newVersion.labels = new String[0];
             newVersion.id = null;
             newVersion.oid = 0;
-            newVersion.state = 0;            
+            newVersion.state = 0;
+            newVersion.date = null;
             return newVersion;
         } catch (CloneNotSupportedException x) { 
             // Could not happen sense we clone ourselves
@@ -84,7 +85,7 @@ public class Version extends PersistentResource
                     predecessor.successors.add(this);
                 }
             }
-            date = new Date();
+            date = Instant.now();
             history.versions.add(this);
             history.current = this;
             modify();
@@ -112,7 +113,7 @@ public class Version extends PersistentResource
      * Get date of version creation 
      * @return date when this version was created
      */
-    public Date getDate() { 
+    public Instant getDate() {
         return date;
     }
 
@@ -166,7 +167,7 @@ public class Version extends PersistentResource
         successors = storage.createLink(1);
         predecessors = storage.createLink(1);
         labels = new String[0];
-        date = new Date();
+        date = Instant.now();
         id = "1";
     }
 
@@ -191,7 +192,7 @@ public class Version extends PersistentResource
     private Link<Version> successors;
     private Link<Version> predecessors;
     private String[]      labels;
-    private Date          date;
+    private Instant       date;
     private String        id;
     VersionHistory        history;
 }

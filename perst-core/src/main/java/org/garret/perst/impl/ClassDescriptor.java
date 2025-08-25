@@ -2,6 +2,7 @@ package org.garret.perst.impl;
 import  org.garret.perst.*;
 import  java.lang.reflect.*;
 import  java.util.*;
+import  java.time.Instant;
 
 public final class ClassDescriptor extends Persistent { 
     ClassDescriptor   next;
@@ -243,7 +244,7 @@ public final class ClassDescriptor extends Persistent {
     {
         if (obj != null) {
             Class<?> cls = obj.getClass();
-            return obj instanceof IValue || obj instanceof Number || cls.isArray() || cls == Character.class || cls == Boolean.class || cls == Date.class || cls == String.class;
+            return obj instanceof IValue || obj instanceof Number || cls.isArray() || cls == Character.class || cls == Boolean.class || cls == Date.class || cls == Instant.class || cls == String.class;
         }
         return false;
     }
@@ -270,7 +271,7 @@ public final class ClassDescriptor extends Persistent {
             type = tpBoolean;
         } else if (c.isEnum()) {
             type = tpEnum;
-        } else if (c.equals(Date.class)) {
+        } else if (c.equals(Date.class) || c.equals(Instant.class)) {
             type = tpDate;
         } else if (IValue.class.isAssignableFrom(c)) {
             type = tpValue;

@@ -1,5 +1,6 @@
 package org.garret.perst;
 
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -51,17 +52,17 @@ public class VersionHistory<V extends Version>  extends PersistentResource
      * @param timestamp deadline, if <code>null</code> then the latest version in version history will be returned
      * @return version with the largest timestamp less than or equal to specified <code>timestamp</code>
      */
-    public synchronized V getLatestBefore(Date timestamp) { 
-        if (timestamp == null) { 
+    public synchronized V getLatestBefore(Instant timestamp) {
+        if (timestamp == null) {
             return versions.get(versions.size()-1);
         }
         int l = 0, n = versions.size(), r = n;
-        long t = timestamp.getTime()+1;
-        while (l < r) { 
+        long t = timestamp.toEpochMilli()+1;
+        while (l < r) {
             int m = (l + r) >> 1;
-            if (versions.get(m).getDate().getTime() < t) { 
+            if (versions.get(m).getDate().toEpochMilli() < t) {
                 l = m + 1;
-            } else { 
+            } else {
                 r = m;
             }
         }
@@ -69,25 +70,41 @@ public class VersionHistory<V extends Version>  extends PersistentResource
     }
 
     /**
+     * @deprecated use {@link #getLatestBefore(Instant)} instead
+     */
+    @Deprecated
+    public synchronized V getLatestBefore(Date timestamp) {
+        return getLatestBefore(timestamp != null ? timestamp.toInstant() : null);
+    }
+
+    /**
      * Get earliest version after specified date
      * @param timestamp deadline, if <code>null</code> then root version will be returned
      * @return version with the smallest timestamp greater than or equal to specified <code>timestamp</code>
      */
-    public synchronized V getEarliestAfter(Date timestamp) { 
-        if (timestamp == null) { 
+    public synchronized V getEarliestAfter(Instant timestamp) {
+        if (timestamp == null) {
             return versions.get(0);
         }
         int l = 0, n = versions.size(), r = n;
-        long t = timestamp.getTime();
-        while (l < r) { 
+        long t = timestamp.toEpochMilli();
+        while (l < r) {
             int m = (l + r) >> 1;
-            if (versions.get(m).getDate().getTime() < t) { 
+            if (versions.get(m).getDate().toEpochMilli() < t) {
                 l = m + 1;
-            } else { 
+            } else {
                 r = m;
             }
         }
         return r < n ? versions.get(r) : null;
+    }
+
+    /**
+     * @deprecated use {@link #getEarliestAfter(Instant)} instead
+     */
+    @Deprecated
+    public synchronized V getEarliestAfter(Date timestamp) {
+        return getEarliestAfter(timestamp != null ? timestamp.toInstant() : null);
     }
 
 
