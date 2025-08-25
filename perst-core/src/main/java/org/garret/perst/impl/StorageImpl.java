@@ -910,6 +910,32 @@ public class StorageImpl implements Storage {
         }
     }
 
+    @Override
+    public void open(String filePath, long pagePoolSize) {
+        open(Path.of(filePath), pagePoolSize);
+    }
+
+    @Override
+    public void open(String filePath) {
+        open(Path.of(filePath));
+    }
+
+    @Override
+    public void open(String filePath, long pagePoolSize, String cipherKey) {
+        // Encryption is not supported in this implementation
+        open(Path.of(filePath), pagePoolSize);
+    }
+
+    @Override
+    public void open(IFile file, long pagePoolSize) {
+        throw new UnsupportedOperationException("IFile access is not supported");
+    }
+
+    @Override
+    public void open(IFile file) {
+        open(file, DEFAULT_PAGE_POOL_SIZE);
+    }
+
     public void open(Path filePath) {
         open(filePath, DEFAULT_PAGE_POOL_SIZE);
     }
@@ -2735,6 +2761,7 @@ public class StorageImpl implements Storage {
         rollbackThreadTransaction();
     }
 
+    @Override
     public void beginThreadTransaction(TransactionMode mode)
     {
         switch (mode) {
