@@ -3407,7 +3407,7 @@ public class StorageImpl implements Storage {
 
     private final void storeObject0(Object obj, boolean finalized)
     {
-        if (obj instanceof IStoreable) {
+        if (obj instanceof IPersistent) {
             ((IPersistent)obj).onStore();
         }
         if (listener != null) {
@@ -3651,7 +3651,7 @@ public class StorageImpl implements Storage {
                 throw new StorageError(StorageError.ACCESS_VIOLATION, x);
             }
         }
-        if (obj instanceof ILoadable) {
+        if (obj instanceof IPersistent) {
             ((IPersistent)obj).onLoad();
         }
         if (listener != null) {
