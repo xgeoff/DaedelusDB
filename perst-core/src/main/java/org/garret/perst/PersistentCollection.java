@@ -10,14 +10,15 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.util.AbstractCollection;
 import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Base class for persistent collections. This class delegates all
  * standard {@link java.util.Collection} behaviour to
  * {@link java.util.AbstractCollection} and implements only
  * persistence-specific functionality.
+ * <p>
+ * Per-object locks were removed in favour of the single writer thread queue;
+ * locking methods now simply notify the storage and perform no synchronization.
  */
 public abstract class PersistentCollection<T> extends AbstractCollection<T>
         implements ITable<T>, IPersistent, IResource, ICloneable, Pinned {
@@ -30,84 +31,34 @@ public abstract class PersistentCollection<T> extends AbstractCollection<T>
     transient int     oid;
     transient EnumSet<PersistenceState> state = EnumSet.noneOf(PersistenceState.class);
 
-    private transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     // IResource implementation
     public void sharedLock() {
-        if (lock.isWriteLockedByCurrentThread()) {
-            lock.writeLock().lock();
-        } else {
-            lock.readLock().lock();
-            if (storage != null && lock.getReadLockCount() == 1 && !lock.isWriteLocked()) {
-                storage.lockObject(this);
-            }
-        }
-    }
-
-    public boolean sharedLock(long timeout) {
-        if (lock.isWriteLockedByCurrentThread()) {
-            lock.writeLock().lock();
-            return true;
-        }
-        try {
-            if (lock.readLock().tryLock(timeout, TimeUnit.MILLISECONDS)) {
-                if (storage != null && lock.getReadLockCount() == 1 && !lock.isWriteLocked()) {
-                    storage.lockObject(this);
-                }
-                return true;
-            }
-            return false;
-        } catch (InterruptedException x) {
-            return false;
-        }
-    }
-
-    public void exclusiveLock() {
-        lock.writeLock().lock();
-        if (storage != null && lock.getReadLockCount() == 0 && lock.getWriteHoldCount() == 1) {
+        if (storage != null) {
             storage.lockObject(this);
         }
     }
 
+    public boolean sharedLock(long timeout) {
+        sharedLock();
+        return true;
+    }
+
+    public void exclusiveLock() {
+        sharedLock();
+    }
+
     public boolean exclusiveLock(long timeout) {
-        if (lock.isWriteLockedByCurrentThread()) {
-            lock.writeLock().lock();
-            return true;
-        }
-        try {
-            if (lock.writeLock().tryLock(timeout, TimeUnit.MILLISECONDS)) {
-                if (storage != null && lock.getReadLockCount() == 0 && lock.getWriteHoldCount() == 1) {
-                    storage.lockObject(this);
-                }
-                return true;
-            }
-            return false;
-        } catch (InterruptedException x) {
-            return false;
-        }
+        sharedLock();
+        return true;
     }
 
-    public void unlock() {
-        if (lock.isWriteLockedByCurrentThread()) {
-            lock.writeLock().unlock();
-        } else {
-            lock.readLock().unlock();
-        }
-    }
+    public void unlock() {}
 
-    public void reset() {
-        while (lock.isWriteLockedByCurrentThread()) {
-            lock.writeLock().unlock();
-        }
-        int n = lock.getReadHoldCount();
-        for (int i = 0; i < n; i++) {
-            lock.readLock().unlock();
-        }
-    }
+    public void reset() {}
 
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
-        lock = new ReentrantReadWriteLock();
     }
 
     // IPersistent implementation

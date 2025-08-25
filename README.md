@@ -5,6 +5,11 @@ operations must be executed by a designated **writer thread**.  Read
 transactions may be started from any thread but they block while the
 writer holds the lock.
 
+Object-level locks provided by classes such as `PersistentResource` and
+`PersistentCollection` have been removed. The single writer thread queue
+now provides all necessary synchronization; the legacy lock APIs remain as
+no-ops for backward compatibility.
+
 ## Writer Thread Requirement
 
 Use `setWriterThread(Thread)` to specify which thread performs updates.
