@@ -1,6 +1,7 @@
 package org.garret.perst;
 
 import java.time.Instant;
+import java.util.EnumSet;
 
 /**
  * Base class for version of versioned object. All versions are kept in version history.
@@ -60,7 +61,7 @@ public class Version extends PersistentResource
             newVersion.labels = new String[0];
             newVersion.id = null;
             newVersion.oid = 0;
-            newVersion.state = 0;
+            newVersion.state = EnumSet.noneOf(PersistenceState.class);
             newVersion.date = null;
             return newVersion;
         } catch (CloneNotSupportedException x) { 

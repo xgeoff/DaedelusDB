@@ -12,6 +12,7 @@ package org.garret.perst.aspectj;
  */
 
 import org.garret.perst.*;
+import java.util.EnumSet;
 
 privileged public aspect PersistenceAspect {
     declare parents: AutoPersist extends IPersistent;
@@ -56,7 +57,7 @@ privileged public aspect PersistenceAspect {
     
     public void AutoPersist.unassignOid() {
         oid = 0;
-        state = DELETED;
+        state = EnumSet.of(PersistenceState.DELETED);
         storage = null;
     }
 
@@ -64,9 +65,9 @@ privileged public aspect PersistenceAspect {
         oid = o;
         storage = s;
         if (raw) {
-            state |= RAW;
-        } else { 
-            state &= ~RAW;
+            state.add(PersistenceState.RAW);
+        } else {
+            state.remove(PersistenceState.RAW);
         }
     }
     
@@ -104,7 +105,7 @@ privileged public aspect PersistenceAspect {
     }
     
     public synchronized void AutoPersist.load() {
-        if (oid != 0 && (state & RAW) != 0) { 
+        if (oid != 0 && state.contains(PersistenceState.RAW)) {
             storage.loadObject(this);
         }
     }
@@ -115,15 +116,15 @@ privileged public aspect PersistenceAspect {
     }
 
     public final boolean AutoPersist.isRaw() { 
-        return (state & RAW) != 0;
+        return state.contains(PersistenceState.RAW);
     } 
     
     public final boolean AutoPersist.isModified() { 
-        return (state & DIRTY) != 0;
+        return state.contains(PersistenceState.DIRTY);
     } 
     
     public final boolean AutoPersist.isDeleted() { 
-        return (state & DELETED) != 0;
+        return state.contains(PersistenceState.DELETED);
     } 
     
     public final boolean AutoPersist.isPersistent() { 
@@ -137,23 +138,23 @@ privileged public aspect PersistenceAspect {
     }
 
     public void AutoPersist.store() {
-        if ((state & RAW) != 0) { 
+        if (state.contains(PersistenceState.RAW)) {
             throw new StorageError(StorageError.ACCESS_TO_STUB);
         }
         if (storage != null) { 
             storage.storeObject(this);
-            state &= ~DIRTY;
+            state.remove(PersistenceState.DIRTY);
         }
     }
     
     public void AutoPersist.modify() { 
-        if ((state & DIRTY) == 0 && oid != 0) { 
-            if ((state & RAW) != 0) { 
+        if (!state.contains(PersistenceState.DIRTY) && oid != 0) {
+            if (state.contains(PersistenceState.RAW)) {
                 throw new StorageError(StorageError.ACCESS_TO_STUB);
             }
-            Assert.that((state & DELETED) == 0);
+            Assert.that(!state.contains(PersistenceState.DELETED));
             storage.modifyObject(this);
-            state |= DIRTY;
+            state.add(PersistenceState.DIRTY);
         }
     }
     
@@ -181,15 +182,16 @@ privileged public aspect PersistenceAspect {
     public void AutoPersist.onStore() {
     }
     
-    public void AutoPersist.invalidate() { 
-        state |= RAW;
+    public void AutoPersist.invalidate() {
+        state.remove(PersistenceState.DIRTY);
+        state.add(PersistenceState.RAW);
     }
     
     public void AutoPersist.finalize() { 
-        if ((state & DIRTY) != 0 && oid != 0) { 
+        if (state.contains(PersistenceState.DIRTY) && oid != 0) {
             storage.storeFinalizedObject(this);
         }
-        state = DELETED;
+        state = EnumSet.of(PersistenceState.DELETED);
     }
     
     public Object AutoPersist.clone() throws CloneNotSupportedException 
@@ -198,7 +200,7 @@ privileged public aspect PersistenceAspect {
         /* Doen't work any more...
         Persistent p = (Persistent)super.clone();
         p.oid = 0;
-        p.state = 0;
+        p.state = EnumSet.noneOf(PersistenceState.class);
         return p;
         */
     }
@@ -215,9 +217,5 @@ privileged public aspect PersistenceAspect {
 
     private transient Storage AutoPersist.storage;
     private transient int     AutoPersist.oid;
-    private transient int     AutoPersist.state;
-    
-    private static final int RAW   = 1;
-    private static final int DIRTY = 2;
-    private static final int DELETED = 4;
+    private transient EnumSet<PersistenceState> AutoPersist.state = EnumSet.noneOf(PersistenceState.class);
 }
