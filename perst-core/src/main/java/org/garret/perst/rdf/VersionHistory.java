@@ -1,5 +1,6 @@
 package org.garret.perst.rdf;
 
+import java.time.Instant;
 import java.util.*;
 import org.garret.perst.*;
 
@@ -36,14 +37,22 @@ public class VersionHistory extends Persistent {
     * @return The latest version in version history prior to the specified timestamp 
     * or null if no such version is found
     */
-    public Thing getLatestBefore(Date timestamp) {
-        for (int i = versions.size(); --i >= 0;) { 
+    public Thing getLatestBefore(Instant timestamp) {
+        for (int i = versions.size(); --i >= 0;) {
             Thing v = (Thing)versions.get(i);
-            if (v.timestamp.compareTo(timestamp) <= 0) { 
+            if (v.timestamp.toInstant().compareTo(timestamp) <= 0) {
                 return v;
             }
         }
         return null;
+    }
+
+    /**
+     * @deprecated use {@link #getLatestBefore(Instant)} instead
+     */
+    @Deprecated
+    public Thing getLatestBefore(Date timestamp) {
+        return timestamp == null ? getLatest() : getLatestBefore(timestamp.toInstant());
     }
     
    /** 
@@ -52,14 +61,22 @@ public class VersionHistory extends Persistent {
     * @param timestamp timestamp
     * @return The oldest version in version history released after the specified timestamp
     */
-    public Thing getOldestAfter(Date timestamp) {
-        for (int i = 0; i < versions.size(); i++) { 
+    public Thing getOldestAfter(Instant timestamp) {
+        for (int i = 0; i < versions.size(); i++) {
             Thing v = (Thing)versions.get(i);
-            if (v.timestamp.compareTo(timestamp) >= 0) { 
+            if (v.timestamp.toInstant().compareTo(timestamp) >= 0) {
                 return v;
             }
         }
-        return null;  
+        return null;
+    }
+
+    /**
+     * @deprecated use {@link #getOldestAfter(Instant)} instead
+     */
+    @Deprecated
+    public Thing getOldestAfter(Date timestamp) {
+        return timestamp == null ? null : getOldestAfter(timestamp.toInstant());
     }
 
    /** 
@@ -69,15 +86,23 @@ public class VersionHistory extends Persistent {
     * @param timestamp 
     * @return Version natching time criteria or null if not found
     */
-    public Thing getVersion(SearchKind kind, Date timestamp) {
-        if (kind == SearchKind.LatestVersion) { 
+    public Thing getVersion(SearchKind kind, Instant timestamp) {
+        if (kind == SearchKind.LatestVersion) {
             return getLatest();
         } else if (kind == SearchKind.LatestBefore) {
             return getLatestBefore(timestamp);
-        } else if (kind == SearchKind.OldestAfter) { 
+        } else if (kind == SearchKind.OldestAfter) {
             return getOldestAfter(timestamp);
-        } else { 
+        } else {
             throw new IllegalArgumentException("Invalid search kind " + kind + " for VersionHistory.GetVersion");
         }
+    }
+
+    /**
+     * @deprecated use {@link #getVersion(SearchKind, Instant)} instead
+     */
+    @Deprecated
+    public Thing getVersion(SearchKind kind, Date timestamp) {
+        return getVersion(kind, timestamp != null ? timestamp.toInstant() : null);
     }
 }

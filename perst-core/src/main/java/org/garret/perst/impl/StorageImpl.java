@@ -4,6 +4,7 @@ import org.garret.perst.*;
 import org.garret.perst.fulltext.*;
 import java.lang.reflect.*;
 import java.util.*;
+import java.time.Instant;
 import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -3753,8 +3754,9 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
                 offs += 8;
                 break;
             case ClassDescriptor.tpDate:
-                val = new Date(Bytes.unpack8(body, offs));
+                long msec = Bytes.unpack8(body, offs);
                 offs += 8;
+                val = (cls == Instant.class) ? Instant.ofEpochMilli(msec) : new Date(msec);
                 break;
             case ClassDescriptor.tpString:
                 obj.offs = offs;
@@ -4116,9 +4118,9 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
                 {
                     long msec = Bytes.unpack8(body, offs);
                     offs += 8;
-                    Date date = null;
+                    Object date = null;
                     if (msec != INVALID_DATE) {
-                        date = new Date(msec);
+                        date = (f.getType() == Instant.class) ? Instant.ofEpochMilli(msec) : new Date(msec);
                     }
                     provider.set(f, obj, date);
                     continue;
@@ -4180,8 +4182,9 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
                             offs += 8;
                             break;
                         case ClassDescriptor.tpDate:
-                            val = new Date(Bytes.unpack8(body, offs));
+                            long msec = Bytes.unpack8(body, offs);
                             offs += 8;
+                            val = (f.getType() == Instant.class) ? Instant.ofEpochMilli(msec) : new Date(msec);
                             break;
                         case ClassDescriptor.tpObject:
                             val = unswizzle(Bytes.unpack4(body, offs), Persistent.class, recursiveLoading);
@@ -4795,8 +4798,10 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
                 case ClassDescriptor.tpDate:
                 {
                     buf.extend(offs + 8);
-                    Date d = (Date)f.get(obj);
-                    long msec = (d == null) ? Storage.INVALID_DATE : d.getTime();
+                    Object d = f.get(obj);
+                    long msec = (d == null) ? Storage.INVALID_DATE
+                        : (d instanceof Instant) ? ((Instant)d).toEpochMilli()
+                        : ((Date)d).getTime();
                     Bytes.pack8(buf.arr, offs, msec);
                     offs += 8;
                     continue;
