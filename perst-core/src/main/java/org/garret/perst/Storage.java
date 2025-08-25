@@ -1,5 +1,8 @@
 package org.garret.perst;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import org.garret.perst.fulltext.*;
@@ -8,7 +11,114 @@ import org.garret.perst.impl.ThreadTransactionContext;
 /**
  * Object storage
  */
-public interface Storage extends StorageLifecycle, TransactionManager, BackupService {
+public interface Storage {
+
+    /** Constant specifying that page pool should be dynamically extended to contain all database file pages. */
+    int INFINITE_PAGE_POOL = 0;
+
+    /** Constant specifying default pool size. */
+    int DEFAULT_PAGE_POOL_SIZE = 4*1024*1024;
+
+    /**
+     * Open the storage.
+     *
+     * @param filePath path to the database file
+     * @param pagePoolSize size of page pool (in bytes). Page pool should contain at least
+     * ten 4kb pages, so minimal page pool size should be at least 40Kb. But larger page pool
+     * usually leads to better performance (unless it could not fit in memory and cause swapping).
+     * Value 0 of this parameter corresponds to an infinite page pool (all pages are cached in memory).
+     */
+    void open(Path filePath, long pagePoolSize);
+
+    /**
+     * Open the storage with default page pool size.
+     *
+     * @param filePath path to the database file
+     */
+    void open(Path filePath);
+
+    /**
+     * Check if database is opened.
+     *
+     * @return <code>true</code> if database was opened by <code>open</code> method,
+     * <code>false</code> otherwise
+     */
+    boolean isOpened();
+
+    /**
+     * Get storage root. Storage can have exactly one root object.
+     *
+     * @return root object or <code>null</code> if root is not specified
+     */
+    <T> T getRoot();
+
+    /**
+     * Set new storage root object.
+     *
+     * @param root object to become new storage root
+     */
+    void setRoot(Object root);
+
+    /**
+     * Commit transaction (if needed) and close the storage.
+     */
+    void close();
+
+    /** Commit changes done by the last transaction. */
+    void commit();
+
+    /** Rollback changes made by the last transaction. */
+    void rollback();
+
+    /** Begin per-thread transaction. */
+    void beginThreadTransaction(TransactionMode mode);
+
+    /**
+     * Convenience method returning {@link Transaction} object allowing
+     * the use of try-with-resources statement for transactions.
+     *
+     * @param mode transaction mode
+     * @return transaction handle
+     */
+    default Transaction beginTransaction(TransactionMode mode) {
+        return new Transaction(this, mode);
+    }
+
+    /** End per-thread transaction started by beginThreadTransaction method. */
+    void endThreadTransaction();
+
+    /** End per-thread cooperative transaction with specified maximal delay of transaction commit. */
+    void endThreadTransaction(int maxDelay);
+
+    /** Check if nested thread transaction is active. */
+    boolean isInsideThreadTransaction();
+
+    /** Rollback per-thread transaction. */
+    void rollbackThreadTransaction();
+
+    /** Start serializable transaction. */
+    void beginSerializableTransaction();
+
+    /** Commit serializable transaction. */
+    void commitSerializableTransaction();
+
+    /** Rollback serializable transaction. */
+    void rollbackSerializableTransaction();
+
+    /**
+     * Backup current state of database.
+     *
+     * @param out output stream to which backup is done
+     */
+    void backup(OutputStream out) throws IOException;
+
+    /**
+     * Backup current state of database to the file with specified path.
+     *
+     * @param filePath path to the backup file
+     * @param cipherKey cipher key for the encryption of the backup file, null to disable encryption
+     */
+    void backup(String filePath, String cipherKey) throws IOException;
 
     /**
      * Get Perst version (for example 435 for release 4.35)

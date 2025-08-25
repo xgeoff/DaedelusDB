@@ -13,7 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.*;
 
-public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.TransactionManager, BackupService {
+public class StorageImpl implements Storage {
     /**
      * Initialial database index size - increasing it reduce number of index reallocation but increase
      * initial database size. Should be set before openning connection.
