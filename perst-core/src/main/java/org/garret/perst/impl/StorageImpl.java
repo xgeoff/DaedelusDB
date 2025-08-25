@@ -5249,11 +5249,11 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
                 synchronized (objectCache) {
                     synchronized (objMap) {
                         ObjectMap.Entry e = objMap.put(obj);
-                        if ((e.state & Persistent.RAW) != 0) {
+                        if (e.state.contains(PersistenceState.RAW)) {
                             throw new StorageError(StorageError.ACCESS_TO_STUB);
                         }
                         storeObject(obj);
-                        e.state &= ~Persistent.DIRTY;
+                        e.state.remove(PersistenceState.DIRTY);
                     }
                 }
             }
@@ -5277,7 +5277,9 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
                 ObjectMap.Entry e = objMap.put(obj);
                 e.oid = oid;
                 if (raw) {
-                    e.state = Persistent.RAW;
+                    e.state = EnumSet.of(PersistenceState.RAW);
+                } else {
+                    e.state = EnumSet.noneOf(PersistenceState.class);
                 }
             }
         }
@@ -5302,13 +5304,13 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
                 synchronized (objectCache) {
                     synchronized (objMap) {
                         ObjectMap.Entry e = objMap.put(obj);
-                        if ((e.state & Persistent.DIRTY) == 0 && e.oid != 0) {
-                            if ((e.state & Persistent.RAW) != 0) {
+                        if (!e.state.contains(PersistenceState.DIRTY) && e.oid != 0) {
+                            if (e.state.contains(PersistenceState.RAW)) {
                                 throw new StorageError(StorageError.ACCESS_TO_STUB);
                             }
-                            Assert.that((e.state & Persistent.DELETED) == 0);
+                            Assert.that(!e.state.contains(PersistenceState.DELETED));
                             storeObject(obj);
-                            e.state &= ~Persistent.DIRTY;
+                            e.state.remove(PersistenceState.DIRTY);
                         }
                     }
                 }
@@ -5323,8 +5325,8 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
         } else {
             synchronized (objMap) {
                 ObjectMap.Entry e = objMap.put(obj);
-                e.state &= ~Persistent.DIRTY;
-                e.state |= Persistent.RAW;
+                e.state.remove(PersistenceState.DIRTY);
+                e.state.add(PersistenceState.RAW);
             }
         }
     }
@@ -5336,7 +5338,7 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
         } else {
             synchronized (objMap) {
                 ObjectMap.Entry e = objMap.get(obj);
-                if (e == null || (e.state & Persistent.RAW) == 0 || e.oid == 0) {
+                if (e == null || !e.state.contains(PersistenceState.RAW) || e.oid == 0) {
                     return;
                 }
             }
@@ -5353,7 +5355,7 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
             synchronized (objMap)
             {
                 ObjectMap.Entry e = objMap.get(obj);
-                return e != null && (e.state & Persistent.RAW) == 0 && e.oid != 0;
+                return e != null && !e.state.contains(PersistenceState.RAW) && e.oid != 0;
             }
         }
     }
@@ -5370,7 +5372,7 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
 
     boolean isDeleted(Object obj)
     {
-        return (obj instanceof IPersistent) ? ((IPersistent)obj).isDeleted() : obj == null ? false : (objMap.getState(obj) & Persistent.DELETED) != 0;
+        return (obj instanceof IPersistent) ? ((IPersistent)obj).isDeleted() : obj == null ? false : objMap.getState(obj).contains(PersistenceState.DELETED);
     }
 
     boolean recursiveLoading(Object obj)
@@ -5407,12 +5409,12 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
 
     boolean isModified(Object obj)
     {
-        return (obj instanceof IPersistent) ? ((IPersistent)obj).isModified() : obj == null ? false : (objMap.getState(obj) & Persistent.DIRTY) != 0;
+        return (obj instanceof IPersistent) ? ((IPersistent)obj).isModified() : obj == null ? false : objMap.getState(obj).contains(PersistenceState.DIRTY);
     }
 
     boolean isRaw(Object obj)
     {
-        return (obj instanceof IPersistent) ? ((IPersistent)obj).isRaw() : obj == null ? false : (objMap.getState(obj) & Persistent.RAW) != 0;
+        return (obj instanceof IPersistent) ? ((IPersistent)obj).isRaw() : obj == null ? false : objMap.getState(obj).contains(PersistenceState.RAW);
     }
 
     private ObjectMap objMap;

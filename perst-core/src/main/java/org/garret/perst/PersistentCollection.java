@@ -2,6 +2,7 @@ package org.garret.perst;
 
 import org.garret.perst.impl.QueryImpl;
 import org.garret.perst.impl.StorageImpl;
+import java.util.EnumSet;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -27,11 +28,7 @@ public abstract class PersistentCollection<T> extends AbstractCollection<T>
 
     transient Storage storage;
     transient int     oid;
-    transient int     state;
-
-    static public final int RAW   = 1;
-    static public final int DIRTY = 2;
-    static public final int DELETED = 4;
+    transient EnumSet<PersistenceState> state = EnumSet.noneOf(PersistenceState.class);
 
     private transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -115,7 +112,7 @@ public abstract class PersistentCollection<T> extends AbstractCollection<T>
 
     // IPersistent implementation
     public synchronized void load() {
-        if (oid != 0 && (state & RAW) != 0) {
+        if (oid != 0 && state.contains(PersistenceState.RAW)) {
             storage.checkReadLock(getOid());
             storage.loadObject(this);
         }
@@ -127,15 +124,15 @@ public abstract class PersistentCollection<T> extends AbstractCollection<T>
     }
 
     public final boolean isRaw() {
-        return (state & RAW) != 0;
+        return state.contains(PersistenceState.RAW);
     }
 
     public final boolean isModified() {
-        return (state & DIRTY) != 0;
+        return state.contains(PersistenceState.DIRTY);
     }
 
     public final boolean isDeleted() {
-        return (state & DELETED) != 0;
+        return state.contains(PersistenceState.DELETED);
     }
 
     public final boolean isPersistent() {
@@ -149,23 +146,23 @@ public abstract class PersistentCollection<T> extends AbstractCollection<T>
     }
 
     public void store() {
-        if ((state & RAW) != 0) {
+        if (state.contains(PersistenceState.RAW)) {
             throw new StorageError(StorageError.ACCESS_TO_STUB);
         }
         if (storage != null) {
             storage.storeObject(this);
-            state &= ~DIRTY;
+            state.remove(PersistenceState.DIRTY);
         }
     }
 
     public void modify() {
-        if ((state & DIRTY) == 0 && oid != 0) {
-            if ((state & RAW) != 0) {
+        if (!state.contains(PersistenceState.DIRTY) && oid != 0) {
+            if (state.contains(PersistenceState.RAW)) {
                 throw new StorageError(StorageError.ACCESS_TO_STUB);
             }
-            Assert.that((state & DELETED) == 0);
+            Assert.that(!state.contains(PersistenceState.DELETED));
             storage.modifyObject(this);
-            state |= DIRTY;
+            state.add(PersistenceState.DIRTY);
         }
     }
 
@@ -188,13 +185,13 @@ public abstract class PersistentCollection<T> extends AbstractCollection<T>
     }
 
     public void invalidate() {
-        state &= ~DIRTY;
-        state |= RAW;
+        state.remove(PersistenceState.DIRTY);
+        state.add(PersistenceState.RAW);
     }
 
     public void unassignOid() {
         oid = 0;
-        state = DELETED;
+        state = EnumSet.of(PersistenceState.DELETED);
         storage = null;
     }
 
@@ -202,14 +199,14 @@ public abstract class PersistentCollection<T> extends AbstractCollection<T>
         this.oid = oid;
         this.storage = storage;
         if (raw) {
-            state |= RAW;
+            state.add(PersistenceState.RAW);
         } else {
-            state &= ~RAW;
+            state.remove(PersistenceState.RAW);
         }
     }
 
     protected void clearState() {
-        state = 0;
+        state.clear();
         oid = 0;
     }
 
@@ -217,7 +214,7 @@ public abstract class PersistentCollection<T> extends AbstractCollection<T>
         @SuppressWarnings("unchecked")
         PersistentCollection<T> p = (PersistentCollection<T>)super.clone();
         p.oid = 0;
-        p.state = 0;
+        p.state = EnumSet.noneOf(PersistenceState.class);
         return p;
     }
 

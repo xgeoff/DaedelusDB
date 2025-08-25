@@ -1,5 +1,6 @@
 package org.garret.perst.impl;
 import  org.garret.perst.*;
+import  java.util.EnumSet;
 import  java.lang.ref.*;
 
 class ObjectMap
@@ -83,16 +84,16 @@ class ObjectMap
         e.oid = oid;
     }
 		
-    synchronized void setState(Object obj, int state)
+    synchronized void setState(Object obj, EnumSet<PersistenceState> state)
     {
         Entry e = put(obj);
-        e.state = state;              
-        if ((state & Persistent.DIRTY) != 0) {
+        e.state = state;
+        if (state.contains(PersistenceState.DIRTY)) {
             e.pin = obj;
         } else {
             e.pin = null;
         }
-    }            
+    }
 		
     Entry get(Object obj) {
         if (obj != null) {
@@ -114,10 +115,10 @@ class ObjectMap
         return e != null ? e.oid : 0;
     }
 
-    synchronized  int getState(Object obj)
+    synchronized EnumSet<PersistenceState> getState(Object obj)
     {
         Entry e = get(obj);
-        return e != null ? e.state : Persistent.DELETED;
+        return e != null ? e.state : EnumSet.of(PersistenceState.DELETED);
     }
 		
     void  rehash()
@@ -177,13 +178,13 @@ class ObjectMap
         WeakReference wref;
         Object pin;
         int oid;
-        int state;
+        EnumSet<PersistenceState> state = EnumSet.noneOf(PersistenceState.class);
 		
         void clear() 
         { 
             wref.clear();
             wref = null;
-            state = 0;
+            state.clear();
             next = null;
             pin = null;
         }
@@ -192,6 +193,7 @@ class ObjectMap
         {
             wref = new WeakReference<>(obj);
             next = chain;
+            state = EnumSet.noneOf(PersistenceState.class);
         }
     }
 }
