@@ -1364,26 +1364,31 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
             // Store should not be used in serializable transaction mode
             throw new StorageError(StorageError.INVALID_OPERATION, "commit");
         }
-        synchronized (backgroundGcMonitor) {
-            synchronized (this) {
-                if (!opened) {
-                    throw new StorageError(StorageError.STORAGE_NOT_OPENED);
-                }
-                if (!modified) {
-                    return;
-                }
-                objectCache.flush();
-                if (customAllocatorSet != null) {
-                    for (CustomAllocator allocator : customAllocatorSet) {
-                        if (allocator.isModified()) {
-                            allocator.store();
-                        }
-                        allocator.commit();
+        lockManager.acquireWrite(0);
+        try {
+            synchronized (backgroundGcMonitor) {
+                synchronized (this) {
+                    if (!opened) {
+                        throw new StorageError(StorageError.STORAGE_NOT_OPENED);
                     }
+                    if (!modified) {
+                        return;
+                    }
+                    objectCache.flush();
+                    if (customAllocatorSet != null) {
+                        for (CustomAllocator allocator : customAllocatorSet) {
+                            if (allocator.isModified()) {
+                                allocator.store();
+                            }
+                            allocator.commit();
+                        }
+                    }
+                    commit0();
+                    modified = false;
                 }
-                commit0();
-                modified = false;
             }
+        } finally {
+            lockManager.releaseWrite(0);
         }
     }
 
@@ -1553,25 +1558,30 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
     }
 
     public synchronized void rollback() {
-        if (!opened) {
-            throw new StorageError(StorageError.STORAGE_NOT_OPENED);
-        }
-        if (useSerializableTransactions && getTransactionContext().nested != 0) {
-            // Store should not be used in serializable transaction mode
-            throw new StorageError(StorageError.INVALID_OPERATION, "rollback");
-        }
-        objectCache.invalidate();
-        synchronized (objectCache){
-            if (!modified) {
-                return;
+        lockManager.acquireWrite(0);
+        try {
+            if (!opened) {
+                throw new StorageError(StorageError.STORAGE_NOT_OPENED);
             }
-            rollback0();
-            modified = false;
-            if (reloadObjectsOnRollback) {
-                objectCache.reload();
-            } else {
-                objectCache.clear();
+            if (useSerializableTransactions && getTransactionContext().nested != 0) {
+                // Store should not be used in serializable transaction mode
+                throw new StorageError(StorageError.INVALID_OPERATION, "rollback");
             }
+            objectCache.invalidate();
+            synchronized (objectCache){
+                if (!modified) {
+                    return;
+                }
+                rollback0();
+                modified = false;
+                if (reloadObjectsOnRollback) {
+                    objectCache.reload();
+                } else {
+                    objectCache.clear();
+                }
+            }
+        } finally {
+            lockManager.releaseWrite(0);
         }
     }
 
@@ -3233,16 +3243,22 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
     public/*protected*/ void modifyObject(final Object obj) {
         if (Thread.currentThread() == writerThread) {
             synchronized(objectCache) {
-                if (!isModified(obj)) {
-                    modified = true;
-                    if (useSerializableTransactions) {
-                        ThreadTransactionContext ctx = getTransactionContext();
-                        if (ctx.nested != 0) { // serializable transaction
-                            ctx.modified.add((IPersistent)obj);
-                            return;
+                int oid = getOid(obj);
+                lockManager.acquireWrite(oid);
+                try {
+                    if (!isModified(obj)) {
+                        modified = true;
+                        if (useSerializableTransactions) {
+                            ThreadTransactionContext ctx = getTransactionContext();
+                            if (ctx.nested != 0) { // serializable transaction
+                                ctx.modified.add((IPersistent)obj);
+                                return;
+                            }
                         }
+                        objectCache.setDirty(obj);
                     }
-                    objectCache.setDirty(obj);
+                } finally {
+                    lockManager.releaseWrite(oid);
                 }
             }
         } else {
@@ -3374,59 +3390,64 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
         } else if (isModified(obj)) {
             objectCache.clearDirty(obj);
         }
-        byte[] data = packObject(obj, finalized);
-        long pos;
-        int newSize = ObjectHeader.getSize(data, 0);
-        CustomAllocator allocator = (customAllocatorMap != null) ? getCustomAllocator(obj.getClass()) : null;
-        if (newObject || (pos = getPos(oid)) == 0) {
-            pos = allocator != null ? allocator.allocate(newSize) : allocate(newSize, 0);
-            setPos(oid, pos | dbModifiedFlag);
-        } else {
-            int offs = (int)pos & (Page.pageSize-1);
-            if ((offs & (dbFreeHandleFlag|dbPageObjectFlag)) != 0) {
-                throw new StorageError(StorageError.DELETED_OBJECT);
-            }
-            Page pg = pool.getPage(pos - offs);
-            int size = ObjectHeader.getSize(pg.data, offs & ~dbFlagsMask);
-            pool.unfix(pg);
-            if ((pos & dbModifiedFlag) == 0) {
-                if (allocator != null) {
-                    allocator.free(pos & ~dbFlagsMask, size);
-                    pos = allocator.allocate(newSize);
-                } else {
-                    cloneBitmap(pos & ~dbFlagsMask, size);
-                    pos = allocate(newSize, 0);
-                }
+        lockManager.acquireWrite(oid);
+        try {
+            byte[] data = packObject(obj, finalized);
+            long pos;
+            int newSize = ObjectHeader.getSize(data, 0);
+            CustomAllocator allocator = (customAllocatorMap != null) ? getCustomAllocator(obj.getClass()) : null;
+            if (newObject || (pos = getPos(oid)) == 0) {
+                pos = allocator != null ? allocator.allocate(newSize) : allocate(newSize, 0);
                 setPos(oid, pos | dbModifiedFlag);
             } else {
-                pos &= ~dbFlagsMask;
-                if (newSize != size) {
+                int offs = (int)pos & (Page.pageSize-1);
+                if ((offs & (dbFreeHandleFlag|dbPageObjectFlag)) != 0) {
+                    throw new StorageError(StorageError.DELETED_OBJECT);
+                }
+                Page pg = pool.getPage(pos - offs);
+                int size = ObjectHeader.getSize(pg.data, offs & ~dbFlagsMask);
+                pool.unfix(pg);
+                if ((pos & dbModifiedFlag) == 0) {
                     if (allocator != null) {
-                        long newPos = allocator.reallocate(pos, size, newSize);
-                        if (newPos != pos) {
-                            pos = newPos;
-                            setPos(oid, pos | dbModifiedFlag);
-                        } else if (newSize < size) {
-                            ObjectHeader.setSize(data, 0, size);
-                        }
+                        allocator.free(pos & ~dbFlagsMask, size);
+                        pos = allocator.allocate(newSize);
                     } else {
-                        if (((newSize + dbAllocationQuantum - 1) & ~(dbAllocationQuantum-1))
-                            > ((size + dbAllocationQuantum - 1) & ~(dbAllocationQuantum-1)))
-                        {
-                            long newPos = allocate(newSize, 0);
-                            cloneBitmap(pos, size);
-                            free(pos, size);
-                            pos = newPos;
-                            setPos(oid, pos | dbModifiedFlag);
-                        } else if (newSize < size) {
-                            ObjectHeader.setSize(data, 0, size);
+                        cloneBitmap(pos & ~dbFlagsMask, size);
+                        pos = allocate(newSize, 0);
+                    }
+                    setPos(oid, pos | dbModifiedFlag);
+                } else {
+                    pos &= ~dbFlagsMask;
+                    if (newSize != size) {
+                        if (allocator != null) {
+                            long newPos = allocator.reallocate(pos, size, newSize);
+                            if (newPos != pos) {
+                                pos = newPos;
+                                setPos(oid, pos | dbModifiedFlag);
+                            } else if (newSize < size) {
+                                ObjectHeader.setSize(data, 0, size);
+                            }
+                        } else {
+                            if (((newSize + dbAllocationQuantum - 1) & ~(dbAllocationQuantum-1))
+                                > ((size + dbAllocationQuantum - 1) & ~(dbAllocationQuantum-1)))
+                            {
+                                long newPos = allocate(newSize, 0);
+                                cloneBitmap(pos, size);
+                                free(pos, size);
+                                pos = newPos;
+                                setPos(oid, pos | dbModifiedFlag);
+                            } else if (newSize < size) {
+                                ObjectHeader.setSize(data, 0, size);
+                            }
                         }
                     }
                 }
             }
+            modified = true;
+            pool.put(pos, data, newSize);
+        } finally {
+            lockManager.releaseWrite(oid);
         }
-        modified = true;
-        pool.put(pos, data, newSize);
     }
 
     public/*protected*/ synchronized void loadObject(Object obj) {
