@@ -1,7 +1,12 @@
 package org.garret.perst;
 
 /**
- * Interface of object supporting locking
+ * Interface of object supporting locking.
+ * <p>
+ * When using the single writer thread queue, implementing classes may
+ * perform no actual synchronization. The methods remain for API
+ * compatibility and to allow the storage to track accessed objects, but
+ * they do not provide mutual exclusion.
  */
 public interface IResource {
    /**
