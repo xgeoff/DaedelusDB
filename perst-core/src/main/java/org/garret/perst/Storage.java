@@ -3,6 +3,7 @@ package org.garret.perst;
 import java.util.Iterator;
 import org.garret.perst.fulltext.*;
 import org.garret.perst.impl.ThreadTransactionContext;
+import org.garret.perst.TransactionMode;
 
 /**
  * Object storage
@@ -190,10 +191,33 @@ public interface Storage {
      * and use <code>store()</code> method to assign OID to inserted object. 
      * You should use <code>SortedCollection</code> based on T-Tree instead or alternative
      * B-Tree implemenataion (set "perst.alternative.btree" property).
-     * @param mode <code>EXCLUSIVE_TRANSACTION</code>, <code>COOPERATIVE_TRANSACTION</code>, 
+     * @param mode <code>EXCLUSIVE_TRANSACTION</code>, <code>COOPERATIVE_TRANSACTION</code>,
      * <code>SERIALIZABLE_TRANSACTION</code> or <code>REPLICATION_SLAVE_TRANSACTION</code>
      */
-    public void beginThreadTransaction(int mode);
+    public default void beginThreadTransaction(int mode) {
+        switch (mode) {
+        case EXCLUSIVE_TRANSACTION:
+            beginThreadTransaction(TransactionMode.EXCLUSIVE);
+            break;
+        case COOPERATIVE_TRANSACTION:
+            beginThreadTransaction(TransactionMode.COOPERATIVE);
+            break;
+        case SERIALIZABLE_TRANSACTION:
+            beginThreadTransaction(TransactionMode.SERIALIZABLE);
+            break;
+        case REPLICATION_SLAVE_TRANSACTION:
+            beginThreadTransaction(TransactionMode.REPLICATION_SLAVE);
+            break;
+        default:
+            throw new IllegalArgumentException("Illegal transaction mode");
+        }
+    }
+
+    /**
+     * Begin per-thread transaction using {@link TransactionMode} enumeration.
+     * @param mode transaction mode
+     */
+    public void beginThreadTransaction(TransactionMode mode);
     
     /**
      * End per-thread transaction started by beginThreadTransaction method.<br>

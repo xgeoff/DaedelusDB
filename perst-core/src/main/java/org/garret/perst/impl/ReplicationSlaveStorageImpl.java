@@ -69,6 +69,7 @@ public abstract class ReplicationSlaveStorageImpl extends StorageImpl implements
         return socket != null;
     }
     
+    @Override
     public void beginThreadTransaction(TransactionMode mode)
     {
         if (mode != TransactionMode.REPLICATION_SLAVE) {
