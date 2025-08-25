@@ -1389,6 +1389,7 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
             }
         } finally {
             lockManager.releaseWrite(0);
+            notifyPendingReaders(0);
         }
     }
 
@@ -1582,6 +1583,7 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
             }
         } finally {
             lockManager.releaseWrite(0);
+            notifyPendingReaders(0);
         }
     }
 
@@ -3240,6 +3242,38 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
         return oid == 0 ? null : lookupObject(oid, null);
     }
 
+    public synchronized <T> T tryReadObject(int oid, Class<T> cls) {
+        if (lockManager.isWriteLocked(oid)) {
+            throw new ConcurrentWriteException("Object " + oid + " is locked for write");
+        }
+        Object obj = objectCache.get(oid);
+        if (obj == null || isRaw(obj)) {
+            obj = loadStub(oid, obj, cls);
+        }
+        if (cls != null) {
+            if (!cls.isInstance(obj)) {
+                throw new ClassCastException();
+            }
+            return cls.cast(obj);
+        }
+        return (T)obj;
+    }
+
+    public <T> CompletableFuture<T> readObjectAsync(int oid, Class<T> cls) {
+        if (!lockManager.isWriteLocked(oid)) {
+            return CompletableFuture.completedFuture(lookupObject(oid, cls));
+        }
+        CompletableFuture<Object> f = new CompletableFuture<Object>();
+        pendingReads.compute(oid, (id, list) -> {
+            if (list == null) {
+                list = new ArrayList<PendingRead>();
+            }
+            list.add(new PendingRead(cls, f));
+            return list;
+        });
+        return f.thenApply(cls::cast);
+    }
+
     public/*protected*/ void modifyObject(final Object obj) {
         if (Thread.currentThread() == writerThread) {
             synchronized(objectCache) {
@@ -3259,6 +3293,7 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
                     }
                 } finally {
                     lockManager.releaseWrite(oid);
+                    notifyPendingReaders(oid);
                 }
             }
         } else {
@@ -3447,6 +3482,7 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
             pool.put(pos, data, newSize);
         } finally {
             lockManager.releaseWrite(oid);
+            notifyPendingReaders(oid);
         }
     }
 
@@ -5473,6 +5509,33 @@ public class StorageImpl implements Storage, StorageLifecycle, org.garret.perst.
     Properties properties = new Properties();
 
     LockManager lockManager = new LockManager();
+
+    static class PendingRead {
+        final Class<?> cls;
+        final CompletableFuture<Object> future;
+        PendingRead(Class<?> cls, CompletableFuture<Object> future) {
+            this.cls = cls;
+            this.future = future;
+        }
+        void complete(StorageImpl storage, int oid) {
+            try {
+                future.complete(storage.lookupObject(oid, cls));
+            } catch (Throwable t) {
+                future.completeExceptionally(t);
+            }
+        }
+    }
+
+    private final ConcurrentHashMap<Integer, List<PendingRead>> pendingReads = new ConcurrentHashMap<Integer, List<PendingRead>>();
+
+    private void notifyPendingReaders(int oid) {
+        List<PendingRead> list = pendingReads.remove(oid);
+        if (list != null) {
+            for (PendingRead pr : list) {
+                pr.complete(this, oid);
+            }
+        }
+    }
 
     String    encoding = null;
 
