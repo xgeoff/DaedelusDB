@@ -83,7 +83,7 @@ public interface Storage {
      * in many other OODBMSes), you should create index and use it as root object.
      * @return root object or <code>null</code> if root is not specified (storage is not yet initialized)
      */
-    public <T> T getRoot();
+    public Object getRoot();
     
     /**
      * Set new storage root object.

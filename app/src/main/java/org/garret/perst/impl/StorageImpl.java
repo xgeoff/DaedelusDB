@@ -1298,12 +1298,12 @@ public class StorageImpl implements Storage {
     }
 
 
-    public synchronized <T> T getRoot() {
+    public synchronized Object getRoot() {
         if (!opened) {
             throw new StorageError(StorageError.STORAGE_NOT_OPENED);
         }
         int rootOid = header.root[1-currIndex].rootObject;
-        return (rootOid == 0) ? null : lookupObject(rootOid, null);
+        return (rootOid == 0) ? null : lookupObject(rootOid);
     }
 
     public synchronized void setRoot(Object root) {
@@ -3186,7 +3186,7 @@ public class StorageImpl implements Storage {
 
     public synchronized Object getObjectByOID(int oid)
     {
-        return oid == 0 ? null : lookupObject(oid, null);
+        return oid == 0 ? null : lookupObject(oid);
     }
 
     public/*protected*/ void modifyObject(final Object obj) {
@@ -3396,19 +3396,21 @@ public class StorageImpl implements Storage {
         }
     }
 
-    final synchronized <T> T lookupObject(int oid, Class<T> cls) {
+    final synchronized Object lookupObject(int oid) {
         checkReadLock(oid);
         Object obj = objectCache.get(oid);
         if (obj == null || isRaw(obj)) {
-            obj = loadStub(oid, obj, cls);
+            obj = loadStub(oid, obj, (obj != null) ? obj.getClass() : null);
         }
-        if (cls != null) {
-            if (!cls.isInstance(obj)) {
-                throw new ClassCastException();
-            }
-            return cls.cast(obj);
+        return obj;
+    }
+
+    final synchronized <T> T lookupObject(int oid, Class<? extends T> cls) {
+        Object obj = lookupObject(oid);
+        if (!cls.isInstance(obj)) {
+            throw new ClassCastException();
         }
-        return (T)obj;
+        return cls.cast(obj);
     }
 
     /**
@@ -3488,7 +3490,7 @@ public class StorageImpl implements Storage {
     }
 
 
-    protected <T> T unswizzle(int oid, Class<T> cls, boolean recursiveLoading) {
+    protected Object unswizzle(int oid, Class<?> cls, boolean recursiveLoading) {
         if (oid == 0) {
             return null;
         }
@@ -3672,7 +3674,7 @@ public class StorageImpl implements Storage {
         return offs;
     }
 
-    final <T> T unswizzle(ArrayPos obj, Class<T> cls, Object parent, boolean recursiveLoading)
+    final Object unswizzle(ArrayPos obj, Class<?> cls, Object parent, boolean recursiveLoading)
       throws Exception
     {
         byte[] body = obj.body;
@@ -3837,7 +3839,7 @@ public class StorageImpl implements Storage {
                     int len = Bytes.unpack4(body, offs);
                     int typeOid = Bytes.unpack4(body, offs + 4);
                     obj.offs = offs + 8;
-                    Class elemType;
+                    Class<?> elemType;
                     if (typeOid == -1) {
                         elemType = Comparable.class;
                     } else {
@@ -3865,23 +3867,23 @@ public class StorageImpl implements Storage {
                     if (desc.isCollection) {
                         int len = Bytes.unpack4(body, offs);
                         obj.offs = offs + 4;
-                        @SuppressWarnings("unchecked")
-                        Collection<Object> collection = (Collection<Object>)val;
-                        for (int i = 0; i < len; i++) {
-                            collection.add(unswizzle(obj, Object.class, parent, recursiveLoading));
-                        }
-                        return cls.cast(collection);
+                      Collection<?> collection = (Collection<?>)val;
+                      java.lang.reflect.Method add = collection.getClass().getMethod("add", Object.class);
+                      for (int i = 0; i < len; i++) {
+                          add.invoke(collection, unswizzle(obj, Object.class, parent, recursiveLoading));
+                      }
+                      return cls.cast(collection);
                     } else if (desc.isMap) {
                         int len = Bytes.unpack4(body, offs);
                         obj.offs = offs + 4;
-                        @SuppressWarnings("unchecked")
-                        Map<Object,Object> map = (Map<Object,Object>)val;
-                        for (int i = 0; i < len; i++) {
-                            Object key = unswizzle(obj, Object.class, parent, recursiveLoading);
-                            Object value = unswizzle(obj, Object.class, parent, recursiveLoading);
-                            map.put(key, value);
-                        }
-                        return cls.cast(map);
+                      Map<?,?> map = (Map<?,?>)val;
+                      java.lang.reflect.Method put = map.getClass().getMethod("put", Object.class, Object.class);
+                      for (int i = 0; i < len; i++) {
+                          Object key = unswizzle(obj, Object.class, parent, recursiveLoading);
+                          Object value = unswizzle(obj, Object.class, parent, recursiveLoading);
+                          put.invoke(map, key, value);
+                      }
+                      return cls.cast(map);
                     } else {
                         offs = unpackObject(val, desc, recursiveLoading, body, offs, parent);
                     }
@@ -3894,9 +3896,23 @@ public class StorageImpl implements Storage {
         }
         obj.offs = offs;
         if (cls.isPrimitive()) {
-            @SuppressWarnings("unchecked")
-            T t = (T)val;
-            return t;
+            if (cls == Integer.TYPE) {
+                return ((Number)val).intValue();
+            } else if (cls == Long.TYPE) {
+                return ((Number)val).longValue();
+            } else if (cls == Short.TYPE) {
+                return ((Number)val).shortValue();
+            } else if (cls == Byte.TYPE) {
+                return ((Number)val).byteValue();
+            } else if (cls == Float.TYPE) {
+                return ((Number)val).floatValue();
+            } else if (cls == Double.TYPE) {
+                return ((Number)val).doubleValue();
+            } else if (cls == Character.TYPE) {
+                return (char)((Number)val).intValue();
+            } else if (cls == Boolean.TYPE) {
+                return ((Boolean)val).booleanValue();
+            }
         }
         return cls.cast(val);
     }
@@ -5111,7 +5127,7 @@ public class StorageImpl implements Storage {
 
         public Object next() {
             int oid = oids.next();
-            return lookupObject(oid, null);
+            return lookupObject(oid);
         }
 
         public int nextOid() {
