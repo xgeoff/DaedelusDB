@@ -5,18 +5,18 @@ import  java.util.*;
 class PersistentListImpl<E> extends PersistentCollection<E> implements IPersistentList<E>
 {
     int      nElems;
-    ListPage root;
+    ListPage<E> root;
 
     transient int modCount;
 
     static final int nLeafPageItems = (Page.pageSize-ObjectHeader.sizeof-8)/4;
     static final int nIntermediatePageItems = (Page.pageSize-ObjectHeader.sizeof-12)/8;
 
-    static class TreePosition {
+    static class TreePosition<E> {
         /**
          * B-Tree page where element is located
          */
-        ListPage page;
+        ListPage<E> page;
 
         /**
          * Index of first element at the page
@@ -25,27 +25,27 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
     }
 
     
-    static class ListPage extends Persistent {
+    static class ListPage<E> extends Persistent {
         int   nItems;
-        Link<Object>  items;
+        Link<E>  items;
 
-        Object get(int i) {
+        E get(int i) {
             return items.get(i);
         }
 
-        Object getPosition(TreePosition pos, int i) {
+        E getPosition(TreePosition<E> pos, int i) {
             pos.page = this;
             pos.index -= i;
             return items.get(i);
         }
 
-        Object getRawPosition(TreePosition pos, int i) {
+        Object getRawPosition(TreePosition<E> pos, int i) {
             pos.page = this;
             pos.index -= i;
             return items.getRaw(i);
         }
 
-        Object set(int i, Object obj) {
+        E set(int i, E obj) {
             return items.set(i, obj);
         }
 
@@ -59,7 +59,7 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
             deallocate();
         }
 
-        void copy(int dstOffs, ListPage src, int srcOffs, int len) { 
+        void copy(int dstOffs, ListPage<E> src, int srcOffs, int len) {
             System.arraycopy(src.items.toRawArray(), srcOffs, items.toRawArray(), dstOffs, len);
         }
 
@@ -67,7 +67,7 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
             return nLeafPageItems;
         }
 
-        void setItem(int i, Object obj) {
+        void setItem(int i, E obj) {
             items.setObject(i, obj);
         }
 
@@ -75,21 +75,21 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
             return nItems;
         }
 
-        ListPage clonePage() { 
-            return new ListPage(getStorage());
+        ListPage<E> clonePage() {
+            return new ListPage<E>(getStorage());
         }
 
         ListPage() {}
 
-        ListPage(Storage storage) { 
+        ListPage(Storage storage) {
             super(storage);
             int max = getMaxItems();
             items = storage.createLink(max);
             items.setSize(max);
         }
 
-        Object remove(int i) {
-            Object obj = items.get(i);
+        E remove(int i) {
+            E obj = items.get(i);
             nItems -= 1;
             copy(i, this, i+1, nItems-i);
             items.setObject(nItems, null);
@@ -101,7 +101,7 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
             return nItems < getMaxItems()/3;
         }
 
-        ListPage add(int i, Object obj) {
+        ListPage<E> add(int i, E obj) {
             int max = getMaxItems();
             modify();
             if (nItems < max) {
@@ -110,7 +110,7 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
                 nItems += 1;
                 return null;
             } else {
-                ListPage b = clonePage();
+                ListPage<E> b = clonePage();
                 int m = (max+1)/2;
                 if (i < m) {
                     b.copy(0, this, 0, i);
@@ -128,102 +128,132 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
                 b.nItems = m;
                 return b;
             }
-        }                
+        }
     }
 
-    static class ListIntermediatePage extends ListPage {
+    static class ListIntermediatePage<E> extends ListPage<E> {
         int[] nChildren;
+        Link<ListPage<E>> items;
 
-        Object getPosition(TreePosition pos, int i) { 
+        E getPosition(TreePosition<E> pos, int i) {
             int j;
             for (j = 0; i >= nChildren[j]; j++) {
                 i -= nChildren[j];
             }
-            return ((ListPage)items.get(j)).getPosition(pos, i);
-        }
-            
-        Object getRawPosition(TreePosition pos, int i) { 
-            int j;
-            for (j = 0; i >= nChildren[j]; j++) {
-                i -= nChildren[j];
-            }
-            return ((ListPage)items.get(j)).getRawPosition(pos, i);
+            return items.get(j).getPosition(pos, i);
         }
 
-        Object get(int i) { 
+        Object getRawPosition(TreePosition<E> pos, int i) {
             int j;
             for (j = 0; i >= nChildren[j]; j++) {
                 i -= nChildren[j];
             }
-            return ((ListPage)items.get(j)).get(i);
+            return items.get(j).getRawPosition(pos, i);
         }
 
-        Object set(int i, Object obj) { 
+        E get(int i) {
             int j;
             for (j = 0; i >= nChildren[j]; j++) {
                 i -= nChildren[j];
             }
-            return ((ListPage)items.get(j)).set(i, obj);
+            return items.get(j).get(i);
         }
 
-        ListPage add(int i, Object obj) {
+        E set(int i, E obj) {
             int j;
             for (j = 0; i >= nChildren[j]; j++) {
                 i -= nChildren[j];
             }
-            ListPage pg = (ListPage)items.get(j);
-            ListPage overflow = pg.add(i, obj);
-            if (overflow != null) { 
+            return items.get(j).set(i, obj);
+        }
+
+        ListPage<E> add(int i, E obj) {
+            int j;
+            for (j = 0; i >= nChildren[j]; j++) {
+                i -= nChildren[j];
+            }
+            ListPage<E> pg = items.get(j);
+            ListPage<E> overflow = pg.add(i, obj);
+            if (overflow != null) {
                 countChildren(j, pg);
-                overflow = super.add(j, overflow);
+                overflow = insertPage(j, overflow);
             } else {
                 modify();
-                if (nChildren[j] != Integer.MAX_VALUE) { 
+                if (nChildren[j] != Integer.MAX_VALUE) {
                     nChildren[j] += 1;
                 }
-            }                
+            }
             return overflow;
         }
 
-        Object remove(int i) {
+        private ListPage<E> insertPage(int i, ListPage<E> obj) {
+            int max = getMaxItems();
+            modify();
+            if (nItems < max) {
+                copy(i+1, this, i, nItems-i);
+                setItem(i, obj);
+                nItems += 1;
+                return null;
+            } else {
+                ListIntermediatePage<E> b = (ListIntermediatePage<E>)clonePage();
+                int m = (max+1)/2;
+                if (i < m) {
+                    b.copy(0, this, 0, i);
+                    b.copy(i+1, this, i, m-i-1);
+                    copy(0, this, m-1, max-m+1);
+                    b.setItem(i, obj);
+                } else {
+                    b.copy(0, this, 0, m);
+                    copy(0, this, m, i-m);
+                    copy(i-m+1, this, i, max-i);
+                    setItem(i-m, obj);
+                }
+                clear(max-m+1, m-1);
+                nItems = max-m+1;
+                b.nItems = m;
+                return b;
+            }
+        }
+
+        E remove(int i) {
             int j;
             for (j = 0; i >= nChildren[j]; j++) {
                 i -= nChildren[j];
             }
-            ListPage pg = (ListPage)items.get(j);
-            Object obj = pg.remove(i);
+            ListPage<E> pg = items.get(j);
+            E obj = pg.remove(i);
             modify();
-            if (pg.underflow()) { 
+            if (pg.underflow()) {
                 handlePageUnderflow(pg, j);
             } else {
-                if (nChildren[j] != Integer.MAX_VALUE) { 
+                if (nChildren[j] != Integer.MAX_VALUE) {
                     nChildren[j] -= 1;
                 }
             }
             return obj;
         }
 
-        void countChildren(int i, ListPage pg) {
-            if (nChildren[i] != Integer.MAX_VALUE) { 
+        void countChildren(int i, ListPage<E> pg) {
+            if (nChildren[i] != Integer.MAX_VALUE) {
                 nChildren[i] = pg.size();
             }
         }
-        
+
         void prune() {
             for (int i = 0; i < nItems; i++) {
-                ((ListPage)items.get(i)).prune();
+                items.get(i).prune();
             }
             deallocate();
         }
 
-        void handlePageUnderflow(ListPage a, int r) {
+        void handlePageUnderflow(ListPage<E> a, int r) {
             int an = a.nItems;
             int max = a.getMaxItems();
             if (r+1 < nItems) { // exists greater page
-                ListPage b = (ListPage)items.get(r+1);
-                int bn = b.nItems; 
+                ListPage<E> b = items.get(r+1);
+                int bn = b.nItems;
                 Assert.that(bn >= an);
-                if (an + bn > max) { 
+                if (an + bn > max) {
                     // reallocation of nodes between pages a and b
                     int i = bn - ((an + bn) >> 1);
                     b.modify();
@@ -234,7 +264,7 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
                     a.nItems += i;
                     nChildren[r] = a.size();
                     countChildren(r+1, b);
-                } else { // merge page b to a  
+                } else { // merge page b to a
                     a.copy(an, b, 0, bn);
                     a.nItems += bn;
                     nItems -= 1;
@@ -245,11 +275,11 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
                     b.deallocate();
                 }
             } else { // page b is before a
-                ListPage b = (ListPage)items.get(r-1);
-                int bn = b.nItems; 
+                ListPage<E> b = items.get(r-1);
+                int bn = b.nItems;
                 Assert.that(bn >= an);
                 b.modify();
-                if (an + bn > max) { 
+                if (an + bn > max) {
                     // reallocation of nodes between pages a and b
                     int i = bn - ((an + bn) >> 1);
                     a.copy(i, a, 0, an);
@@ -271,78 +301,86 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
             }
         }
 
-        void copy(int dstOffs, ListPage src, int srcOffs, int len) { 
-            super.copy(dstOffs, src, srcOffs, len);
-            System.arraycopy(((ListIntermediatePage)src).nChildren, srcOffs, nChildren, dstOffs, len);
+        void copy(int dstOffs, ListPage<E> src, int srcOffs, int len) {
+            System.arraycopy(((ListIntermediatePage<E>)src).items.toRawArray(), srcOffs, items.toRawArray(), dstOffs, len);
+            System.arraycopy(((ListIntermediatePage<E>)src).nChildren, srcOffs, nChildren, dstOffs, len);
         }
 
         int getMaxItems() {
             return nIntermediatePageItems;
         }
 
-        void setItem(int i, Object obj) {
-            super.setItem(i, obj);
-            nChildren[i] = ((ListPage)obj).size();
+        void setItem(int i, ListPage<E> obj) {
+            items.setObject(i, obj);
+            nChildren[i] = obj.size();
+        }
+
+        void clear(int i, int len) {
+            while (--len >= 0) {
+                items.setObject(i++, null);
+            }
         }
 
         int size() {
-            if (nChildren[nItems-1] == Integer.MAX_VALUE) { 
+            if (nChildren[nItems-1] == Integer.MAX_VALUE) {
                 return Integer.MAX_VALUE;
-            } else { 
+            } else {
                 int n = 0;
-                for (int i = 0; i < nItems; i++) { 
+                for (int i = 0; i < nItems; i++) {
                     n += nChildren[i];
                 }
                 return n;
             }
         }
 
-        ListPage clonePage() { 
-            return new ListIntermediatePage(getStorage());
+        ListPage<E> clonePage() {
+            return new ListIntermediatePage<E>(getStorage());
         }
 
         ListIntermediatePage() {}
 
-        ListIntermediatePage(Storage storage) { 
+        ListIntermediatePage(Storage storage) {
             super(storage);
+            items = storage.createLink(nIntermediatePageItems);
+            items.setSize(nIntermediatePageItems);
             nChildren = new int[nIntermediatePageItems];
         }
     }
 
-    public E get(int i) { 
-        if (i < 0 || i >= nElems) { 
+    public E get(int i) {
+        if (i < 0 || i >= nElems) {
             throw new IndexOutOfBoundsException("index=" + i + ", size=" + nElems);
         }
-        return (E)root.get(i);
-    }
-    
-    E getPosition(TreePosition pos, int i) { 
-        if (i < 0 || i >= nElems) { 
-            throw new IndexOutOfBoundsException("index=" + i + ", size=" + nElems);
-        }
-        if (pos.page != null && i >= pos.index && i < pos.index + pos.page.nItems) { 
-            return (E)pos.page.items.get(i - pos.index);
-        }
-        pos.index = i;
-        return (E)root.getPosition(pos, i);
+        return root.get(i);
     }
 
-    Object getRawPosition(TreePosition pos, int i) { 
-        if (i < 0 || i >= nElems) { 
+    E getPosition(TreePosition<E> pos, int i) {
+        if (i < 0 || i >= nElems) {
             throw new IndexOutOfBoundsException("index=" + i + ", size=" + nElems);
         }
-        if (pos.page != null && i >= pos.index && i < pos.index + pos.page.nItems) { 
+        if (pos.page != null && i >= pos.index && i < pos.index + pos.page.nItems) {
+            return pos.page.items.get(i - pos.index);
+        }
+        pos.index = i;
+        return root.getPosition(pos, i);
+    }
+
+    Object getRawPosition(TreePosition<E> pos, int i) {
+        if (i < 0 || i >= nElems) {
+            throw new IndexOutOfBoundsException("index=" + i + ", size=" + nElems);
+        }
+        if (pos.page != null && i >= pos.index && i < pos.index + pos.page.nItems) {
             return pos.page.items.getRaw(i - pos.index);
         }
         pos.index = i;
         return root.getRawPosition(pos, i);
     }
 
-    public E set(int i, E obj) { 
-        if (i < 0 || i >= nElems) { 
+    public E set(int i, E obj) {
+        if (i < 0 || i >= nElems) {
             throw new IndexOutOfBoundsException("index=" + i + ", size=" + nElems);
         }
-        return (E)root.set(i, obj);
+        return root.set(i, obj);
     }
        
     public Object[] toArray() { 
@@ -365,7 +403,7 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
     }
 
     public boolean contains(Object o) {         
-	Iterator e = iterator();
+        Iterator<E> e = iterator();
 	if (o==null) {
 	    while (e.hasNext()) { 
 		if (e.next()==null) {
@@ -391,10 +429,10 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
         if (i < 0 || i > nElems) { 
             throw new IndexOutOfBoundsException("index=" + i + ", size=" + nElems);
         }
-        ListPage overflow = root.add(i, obj);
-        if (overflow != null) { 
-            ListIntermediatePage pg = new ListIntermediatePage(getStorage());
-            pg.setItem(0, overflow);            
+        ListPage<E> overflow = root.add(i, obj);
+        if (overflow != null) {
+            ListIntermediatePage<E> pg = new ListIntermediatePage<E>(getStorage());
+            pg.setItem(0, overflow);
             pg.items.setObject(1, root);
             pg.nChildren[1] = Integer.MAX_VALUE;
             pg.nItems = 2;
@@ -409,9 +447,9 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
         if (i < 0 || i >= nElems) { 
             throw new IndexOutOfBoundsException("index=" + i + ", size=" + nElems);
         }
-        E obj = (E)root.remove(i);
+        E obj = root.remove(i);
         if (root.nItems == 1 && root instanceof ListIntermediatePage) {
-            ListPage newRoot = (ListPage)root.items.get(0);
+            ListPage<E> newRoot = ((ListIntermediatePage<E>)root).items.get(0);
             root.deallocate();
             root = newRoot;
         }
@@ -424,7 +462,7 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
     public void clear() {
         modCount += 1;
         root.prune();
-        root = new ListPage(getStorage()); 
+        root = new ListPage<E>(getStorage());
         nElems = 0;
         modify();
     }        
@@ -482,7 +520,7 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
 	return new ListItr(index);
     }
 
-    private class Itr extends TreePosition implements  PersistentIterator, Iterator<E> {
+    private class Itr extends TreePosition<E> implements  PersistentIterator, Iterator<E> {
 	/**
 	 * Index of element to be returned by subsequent call to next.
 	 */
@@ -624,10 +662,10 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
     }
 
     PersistentListImpl() {}
-    
-    PersistentListImpl(Storage storage) { 
+
+    PersistentListImpl(Storage storage) {
         super(storage);
-        root = new ListPage(storage);
+        root = new ListPage<E>(storage);
     }
 }
         
