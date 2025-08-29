@@ -198,7 +198,7 @@ public class StorageTest {
     public void testCreateSet(){
         storage.open(new NullFile(), INFINITE_PAGE_POOL);
         assertTrue(storage.isOpened());
-        IPersistentSet ps = storage.createSet();
+        IPersistentSet<Stored> ps = storage.createSet();
         assertNotNull(ps);
     }
 
@@ -241,7 +241,7 @@ public class StorageTest {
     @Test
     public void testSetRoot(){
         storage.open(new NullFile(), INFINITE_PAGE_POOL);
-        Root root = new Root( (IPersistentSet)storage.createSet() );
+        Root root = new Root(storage.<Stored>createSet());
         storage.setRoot(root);
         assertEquals(storage.getRoot(), root);
     }
@@ -267,7 +267,7 @@ public class StorageTest {
     @Test
     public void testCommit(){
         storage.open(new NullFile(), INFINITE_PAGE_POOL);
-        Root root = new Root( (IPersistentSet) storage.createSet() );
+        Root root = new Root(storage.<Stored>createSet());
         root.i = 64;
         storage.setRoot(root);
         storage.commit();
@@ -295,7 +295,7 @@ public class StorageTest {
     @Test
     public void testTransaction00(){
         storage.open(new NullFile(), INFINITE_PAGE_POOL);
-        Root root = new Root( (IPersistentSet) storage.createSet() );
+        Root root = new Root(storage.<Stored>createSet());
         root.i = 128;
         storage.setRoot(root);
         storage.commit();
@@ -328,7 +328,7 @@ public class StorageTest {
     @Test
     public void testTransaction01(){
         storage.open(new NullFile(), INFINITE_PAGE_POOL);
-        Root root = new Root( (IPersistentSet) storage.createSet() );
+        Root root = new Root(storage.<Stored>createSet());
         root.i = 10;
         storage.setRoot(root);
         storage.commit();
@@ -355,13 +355,13 @@ public class StorageTest {
     @Test
     public void testTransaction02(){
         storage.open(new NullFile(), INFINITE_PAGE_POOL);
-        Root root = new Root( (IPersistentSet) storage.createSet() );
+        Root root = new Root(storage.<Stored>createSet());
         storage.setRoot(root);
         storage.commit();
-        root.records.add( new Stored("rec1") );
+        root.records.add(new Stored("rec1"));
         storage.rollback();
         root = (Root)storage.getRoot();
-        Iterator iterator = root.records.iterator();
+        Iterator<Stored> iterator = root.records.iterator();
         assertFalse(iterator.hasNext());
     }
 
@@ -382,16 +382,16 @@ public class StorageTest {
     @Test
     public void testTransaction03(){
         storage.open(new NullFile(), INFINITE_PAGE_POOL);
-        Root root = new Root( (IPersistentSet)storage.createSet() );
+        Root root = new Root(storage.<Stored>createSet());
         storage.setRoot(root);
-        root.records.add( new Stored("rec1") );
+        root.records.add(new Stored("rec1"));
         storage.commit();
-        root.records.add( new Stored("rec2") );
+        root.records.add(new Stored("rec2"));
         storage.rollback();
         root = (Root)storage.getRoot();
-        Iterator iterator = root.records.iterator();
+        Iterator<Stored> iterator = root.records.iterator();
         assertTrue(iterator.hasNext());
-        assertEquals( ((Stored)iterator.next()).name, "rec1" );
+        assertEquals(iterator.next().name, "rec1");
         assertFalse(iterator.hasNext());
     }
 
@@ -413,13 +413,13 @@ public class StorageTest {
     public void testStorageListener00() {
         storage.open(new NullFile(), INFINITE_PAGE_POOL);
         TestStorageListener listener = new TestStorageListener();
-        Root root = new Root((IPersistentSet) storage.createSet());
+        Root root = new Root(storage.<Stored>createSet());
         storage.setRoot(root);
-        root.records.add( new Stored() );
+        root.records.add(new Stored());
         storage.setListener(listener);
-        Query query = storage.createQuery();
+        Query<Stored> query = storage.createQuery();
         query.enableRuntimeErrorReporting(true);
-        Iterator i = query.select(Stored.class, root.records.iterator(), "(1/i)=1");
+        IterableIterator<Stored> i = query.select(Stored.class, root.records.iterator(), "(1/i)=1");
         i.hasNext();
     }
 
@@ -441,14 +441,14 @@ public class StorageTest {
     public void testStorageListener01() {
         storage.open(new NullFile(), INFINITE_PAGE_POOL);
         TestStorageListener listener = new TestStorageListener();
-        Root root = new Root((IPersistentSet) storage.createSet());
+        Root root = new Root(storage.<Stored>createSet());
         storage.setRoot(root);
         root.records.add(new Stored());
         storage.setListener(listener);
-        Query query = storage.createQuery();
+        Query<Stored> query = storage.createQuery();
         query.enableRuntimeErrorReporting(true);
         try {
-            Iterator i = query.select(Stored.class, root.records.iterator(), "(1/i)=1");
+            IterableIterator<Stored> i = query.select(Stored.class, root.records.iterator(), "(1/i)=1");
             i.hasNext();
         } catch (Exception e) {
             //
@@ -477,7 +477,7 @@ public class StorageTest {
     @Test
     public void testStoreLoad00() {
         storage.open("StorageTest.dbs");
-        Root root = new Root((IPersistentSet) storage.createSet());
+        Root root = new Root(storage.<Stored>createSet());
         root.i = 25;
         storage.setRoot(root);
         storage.close();
@@ -507,7 +507,7 @@ public class StorageTest {
     @Test
     public void testStoreLoad01() {
         storage.open("StorageTest.dbs");
-        Root root = new Root((IPersistentSet) storage.createSet());
+        Root root = new Root(storage.<Stored>createSet());
         String str = "test string";
         root.s = str;
         storage.setRoot(root);
@@ -538,7 +538,7 @@ public class StorageTest {
     @Test
     public void testStoreLoad02() {
         storage.open("StorageTest.dbs");
-        Root root = new Root((IPersistentSet) storage.createSet());
+        Root root = new Root(storage.<Stored>createSet());
         double d = 12345E-42;
         root.d = d;
         storage.setRoot(root);
@@ -583,12 +583,12 @@ public class StorageTest {
      * Internal class.
      */
     private static class Root extends Persistent{
-        IPersistentSet records;
+        IPersistentSet<Stored> records;
         int i;
         Root next;
         String s;
         double d;
-        public Root(IPersistentSet records){
+        public Root(IPersistentSet<Stored> records){
             this.records = records;
         }
         public Root(){
