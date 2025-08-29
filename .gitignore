@@ -3,3 +3,18 @@
 
 # Ignore Gradle build output directory
 build
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
+
+# =============================================================================
+# Other common files to ignore
+# =============================================================================
+# Log files
+*.log
+
+# Local machine-specific files
+.DS_Store
