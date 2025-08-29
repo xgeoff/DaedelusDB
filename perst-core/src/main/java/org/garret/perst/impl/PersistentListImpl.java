@@ -8,7 +8,6 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
     ListPage root;
 
     transient int modCount;
-    Class<E> elementType = (Class<E>)Object.class;
 
     static final int nLeafPageItems = (Page.pageSize-ObjectHeader.sizeof-8)/4;
     static final int nIntermediatePageItems = (Page.pageSize-ObjectHeader.sizeof-12)/8;
@@ -314,7 +313,7 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
         if (i < 0 || i >= nElems) { 
             throw new IndexOutOfBoundsException("index=" + i + ", size=" + nElems);
         }
-        return elementType.cast(root.get(i));
+        return (E)root.get(i);
     }
     
     E getPosition(TreePosition pos, int i) { 
@@ -322,10 +321,10 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
             throw new IndexOutOfBoundsException("index=" + i + ", size=" + nElems);
         }
         if (pos.page != null && i >= pos.index && i < pos.index + pos.page.nItems) { 
-            return elementType.cast(pos.page.items.get(i - pos.index));
+            return (E)pos.page.items.get(i - pos.index);
         }
         pos.index = i;
-        return elementType.cast(root.getPosition(pos, i));
+        return (E)root.getPosition(pos, i);
     }
 
     Object getRawPosition(TreePosition pos, int i) { 
@@ -343,7 +342,7 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
         if (i < 0 || i >= nElems) { 
             throw new IndexOutOfBoundsException("index=" + i + ", size=" + nElems);
         }
-        return elementType.cast(root.set(i, obj));
+        return (E)root.set(i, obj);
     }
        
     public Object[] toArray() { 
@@ -410,7 +409,7 @@ class PersistentListImpl<E> extends PersistentCollection<E> implements IPersiste
         if (i < 0 || i >= nElems) { 
             throw new IndexOutOfBoundsException("index=" + i + ", size=" + nElems);
         }
-        E obj = elementType.cast(root.remove(i));
+        E obj = (E)root.remove(i);
         if (root.nItems == 1 && root instanceof ListIntermediatePage) {
             ListPage newRoot = (ListPage)root.items.get(0);
             root.deallocate();
