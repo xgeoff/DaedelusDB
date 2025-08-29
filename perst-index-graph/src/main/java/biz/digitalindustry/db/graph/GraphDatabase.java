@@ -20,7 +20,7 @@ public class GraphDatabase implements GraphQueryEngine {
 
     public GraphDatabase(Path path) {
         db = StorageFactory.getInstance().createStorage();
-        db.open(path, Storage.DEFAULT_PAGE_POOL_SIZE);
+        db.open(path.toString(), Storage.DEFAULT_PAGE_POOL_SIZE);
 
         if (db.getRoot() == null) {
             Root root = new Root();
