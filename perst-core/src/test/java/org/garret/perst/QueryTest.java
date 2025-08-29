@@ -39,7 +39,7 @@ import java.util.Vector;
  */
 public class QueryTest {
     Storage storage;
-    Query query;
+    Query<Stored> query;
 
     @Before
     public void setUp() throws Exception {
@@ -58,11 +58,11 @@ public class QueryTest {
      * @param it
      * @param objects
      */
-    private void checkIteratorContains(Iterator it, Object[] objects){
-        Object[] objs = objects.clone();
+    private <T> void checkIteratorContains(Iterator<T> it, T[] objects){
+        T[] objs = objects.clone();
         outer: for (int i = 0; i < objs.length; i++) {
             assertTrue(it.hasNext());
-            Object current = it.next();
+            T current = it.next();
             assertNotNull(current);
             for (int j = 0; j < objs.length; j++) {
                 if (current == objs[j]) {
@@ -110,8 +110,8 @@ public class QueryTest {
      */
     @Test
     public void test01() {
-        Vector v = new Vector();
-        Iterator i = query.select(Stored.class, v.iterator(), "i=6");
+        Vector<Stored> v = new Vector<>();
+        IterableIterator<Stored> i = query.select(Stored.class, v.iterator(), "i=6");
         assertFalse(i.hasNext());
     }
 
@@ -133,10 +133,10 @@ public class QueryTest {
      */
     @Test
     public void test02(){
-        Vector v = new Vector();
+        Vector<Stored> v = new Vector<>();
         v.add(new Stored(5,"t"));
         v.add(new Stored(10, "s"));
-        Iterator i = query.select(Stored.class, v.iterator(), "i=6");
+        IterableIterator<Stored> i = query.select(Stored.class, v.iterator(), "i=6");
         assertFalse(i.hasNext());
     }
 
@@ -158,11 +158,11 @@ public class QueryTest {
      */
     @Test
     public void test03() {
-        Vector v = new Vector();
+        Vector<Stored> v = new Vector<>();
         Stored tc = new Stored(5, "t");
         v.add(tc);
         v.add(new Stored(10, "s"));
-        Iterator i = query.select(Stored.class, v.iterator(), "i=5");
+        IterableIterator<Stored> i = query.select(Stored.class, v.iterator(), "i=5");
         assertEquals(tc, i.next());
         assertFalse(i.hasNext());
     }
@@ -185,7 +185,7 @@ public class QueryTest {
     @Test
     public void test04() {
         try{
-            Vector v = new Vector();
+            Vector<Stored> v = new Vector<>();
             v.add(new Stored(10, "s"));
             query.select(Stored.class, v.iterator(), "asdf=5");
             fail();
@@ -213,10 +213,10 @@ public class QueryTest {
      */
     @Test
     public void test05() {
-        Vector v = new Vector();
+        Vector<Stored> v = new Vector<>();
         Stored tc = new Stored(5, "t");
         v.add(tc);
-        Iterator i = query.select(Stored.class, v.iterator(), "getI=5");
+        IterableIterator<Stored> i = query.select(Stored.class, v.iterator(), "getI=5");
         assertEquals(tc, i.next());
         assertFalse(i.hasNext());
     }
@@ -239,10 +239,10 @@ public class QueryTest {
      */
     @Test
     public void test06() {
-        Vector v = new Vector();
+        Vector<Stored> v = new Vector<>();
         Stored tc = new Stored(5, "t");
         v.add(tc);
-        Iterator i = query.select(Stored.class, v.iterator(), "i=5 and s='t'");
+        IterableIterator<Stored> i = query.select(Stored.class, v.iterator(), "i=5 and s='t'");
         assertEquals(tc, i.next());
         assertFalse(i.hasNext());
     }
@@ -264,10 +264,10 @@ public class QueryTest {
      */
     @Test
     public void test07() {
-        Vector v = new Vector();
+        Vector<Stored> v = new Vector<>();
         Stored tc = new Stored(5, "t");
         v.add(tc);
-        Iterator i = query.select(Stored.class, v.iterator(), "i>4");
+        IterableIterator<Stored> i = query.select(Stored.class, v.iterator(), "i>4");
         assertEquals(tc, i.next());
         assertFalse(i.hasNext());
     }
@@ -289,12 +289,12 @@ public class QueryTest {
      */
     @Test
     public void test08() {
-        Vector v = new Vector();
+        Vector<Stored> v = new Vector<>();
         Stored tc = new Stored(5, "t");
         Stored tc1= new Stored(6, "t");
         v.add(tc );
         v.add(tc1);
-        Iterator i = query.select(Stored.class, v.iterator(), "i<10");
+        IterableIterator<Stored> i = query.select(Stored.class, v.iterator(), "i<10");
         for(int idx=0; idx<2; idx++){
             Object curr = i.next();
             assertNotNull(curr);
@@ -328,12 +328,12 @@ public class QueryTest {
      */
     @Test
     public void test09() {
-        Vector v = new Vector();
+        Vector<Stored> v = new Vector<>();
         Stored tc = new Stored(5, "t");
         Stored tc1 = new StoredEx(6, "t", 25);
         v.add(tc);
         v.add(tc1);
-        Iterator i = query.select(Stored.class, v.iterator(), "i<10");
+        IterableIterator<Stored> i = query.select(Stored.class, v.iterator(), "i<10");
         for (int idx = 0; idx < 2; idx++) {
             Object curr = i.next();
             assertNotNull(curr);
@@ -366,12 +366,12 @@ public class QueryTest {
      */
     @Test
     public void test10() {
-        Vector v = new Vector();
+        Vector<Stored> v = new Vector<>();
         Stored tc = new Stored(5, "t");
         Stored tc1 = new StoredEx(6, "t", 25);
         v.add(tc);
         v.add(tc1);
-        Iterator i = query.select(Stored.class, v.iterator(), "i<10");
+        IterableIterator<Stored> i = query.select(Stored.class, v.iterator(), "i<10");
         for (int idx = 0; idx < 2; idx++) {
             Object curr = i.next();
             assertNotNull(curr);
@@ -404,13 +404,13 @@ public class QueryTest {
      */
     @Test
     public void test11() {
-        Vector v = new Vector();
+        Vector<Stored> v = new Vector<>();
         Stored tc = new Stored(5, "t");
         Stored tc1 = new Stored(6, "t");
         v.add(tc);
         v.add(tc1);
         query.prepare(Stored.class, "i<10");
-        Iterator i = query.execute(v.iterator());
+        IterableIterator<Stored> i = query.execute(v.iterator());
         for (int idx = 0; idx < 2; idx++) {
             Object curr = i.next();
             assertNotNull(curr);
@@ -442,10 +442,10 @@ public class QueryTest {
      */
     @Test
     public void test12() {
-        Vector v = new Vector();
+        Vector<Stored> v = new Vector<>();
         Stored tc = new Stored(5, "t");
         v.add(tc);
-        Iterator i = query.select(Stored.class, v.iterator(), "s like '%t%'");
+        IterableIterator<Stored> i = query.select(Stored.class, v.iterator(), "s like '%t%'");
         assertEquals(tc, i.next());
         assertFalse(i.hasNext());
     }
@@ -467,10 +467,10 @@ public class QueryTest {
      */
     @Test
     public void test13() {
-        Vector v = new Vector();
+        Vector<Stored> v = new Vector<>();
         Stored tc = new Stored(5, "123t456");
         v.add(tc);
-        Iterator i = query.select(Stored.class, v.iterator(), "s like '%t%'");
+        IterableIterator<Stored> i = query.select(Stored.class, v.iterator(), "s like '%t%'");
         assertEquals(tc, i.next());
         assertFalse(i.hasNext());
     }
@@ -492,10 +492,10 @@ public class QueryTest {
      */
     @Test
     public void test14() {
-        Vector v = new Vector();
+        Vector<Stored> v = new Vector<>();
         Stored tc = new Stored(5, "123t456");
         v.add(tc);
-        Iterator i = query.select(Stored.class, v.iterator(), "s like '123%456'");
+        IterableIterator<Stored> i = query.select(Stored.class, v.iterator(), "s like '123%456'");
         assertEquals(tc, i.next());
         assertFalse(i.hasNext());
     }
@@ -517,12 +517,12 @@ public class QueryTest {
      */
     @Test
     public void test15() {
-        Vector v = new Vector();
+        Vector<Stored> v = new Vector<>();
         Stored[] tcs = {new Stored(5, ""), new Stored(10, "")};
         for (Stored tc : tcs) {
             v.add(tc);
         }
-        Iterator i = query.select(Stored.class, v.iterator(), "i=5 or i=10");
+        IterableIterator<Stored> i = query.select(Stored.class, v.iterator(), "i=5 or i=10");
         checkIteratorContains(i, tcs);
     }
 
@@ -543,12 +543,12 @@ public class QueryTest {
      */
     @Test
     public void test16() {
-        Vector v = new Vector();
+        Vector<Stored> v = new Vector<>();
         Stored[] tcs = {new Stored(5, ""), new Stored(10, "")};
         for (Stored tc : tcs) {
             v.add(tc);
         }
-        Iterator i = query.select(Stored.class, v.iterator(), "");
+        IterableIterator<Stored> i = query.select(Stored.class, v.iterator(), "");
         checkIteratorContains(i, tcs);
     }
     /**

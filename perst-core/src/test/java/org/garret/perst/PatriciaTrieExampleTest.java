@@ -9,7 +9,7 @@ public class PatriciaTrieExampleTest {
         Storage db = StorageFactory.getInstance().createStorage();
         db.open(new NullFile(), Storage.INFINITE_PAGE_POOL);
         try {
-            PatriciaTrie root = db.createPatriciaTrie();
+            PatriciaTrie<PersistentString> root = db.createPatriciaTrie();
             db.setRoot(root);
 
             root.add(PatriciaTrieKey.from8bitString("724885"), new PersistentString("ATT"));
