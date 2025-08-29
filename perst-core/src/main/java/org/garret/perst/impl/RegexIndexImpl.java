@@ -219,14 +219,14 @@ public class RegexIndexImpl<T> extends AltBtreeFieldIndex<T> implements RegexInd
         }
     }
             
-    class RegexIterator<T> extends IterableIterator<T> implements PersistentIterator 
-    { 
+    class RegexIterator extends IterableIterator<T> implements PersistentIterator
+    {
         private Iterator<T> iterator;
         private T currObj;
         private String pattern;
         private Storage storage;
 
-        RegexIterator(Iterator<T> iterator, String pattern) { 
+        RegexIterator(Iterator<T> iterator, String pattern) {
             storage = getStorage();
             this.iterator = iterator;
             this.pattern = pattern;
