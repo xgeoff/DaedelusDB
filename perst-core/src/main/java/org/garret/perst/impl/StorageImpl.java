@@ -14,6 +14,69 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.*;
 
 public class StorageImpl implements Storage {
+    static class MvccVersion {
+        final byte[] data;
+        final long startTimestamp;
+        long commitTimestamp;
+
+        MvccVersion(byte[] data, long startTimestamp) {
+            this.data = data;
+            this.startTimestamp = startTimestamp;
+            this.commitTimestamp = 0;
+        }
+    }
+
+    private void finalizeVersions(ThreadTransactionContext ctx, boolean committed) {
+        synchronized (mvccLock) {
+            Iterator<Map.Entry<Integer,List<MvccVersion>>> it = mvccVersions.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<Integer,List<MvccVersion>> e = it.next();
+                List<MvccVersion> list = e.getValue();
+                Iterator<MvccVersion> vit = list.iterator();
+                while (vit.hasNext()) {
+                    MvccVersion v = vit.next();
+                    if (v.startTimestamp == ctx.startTimestamp && v.commitTimestamp == 0) {
+                        if (committed) {
+                            v.commitTimestamp = ctx.commitTimestamp;
+                        } else {
+                            vit.remove();
+                        }
+                    }
+                }
+                if (list.isEmpty()) {
+                    it.remove();
+                }
+            }
+        }
+        cleanupOldVersions();
+    }
+
+    private void cleanupOldVersions() {
+        long oldest = Long.MAX_VALUE;
+        synchronized (activeTransactions) {
+            for (ThreadTransactionContext c : activeTransactions) {
+                if (c.startTimestamp != 0 && c.startTimestamp < oldest) {
+                    oldest = c.startTimestamp;
+                }
+            }
+        }
+        final long oldestTs = oldest;
+        synchronized (mvccLock) {
+            Iterator<Map.Entry<Integer,List<MvccVersion>>> it = mvccVersions.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<Integer,List<MvccVersion>> e = it.next();
+                List<MvccVersion> list = e.getValue();
+                list.removeIf(v -> v.commitTimestamp != 0 && v.commitTimestamp < oldestTs);
+                if (list.isEmpty()) {
+                    it.remove();
+                }
+            }
+        }
+    }
+
+    final Map<Integer,List<MvccVersion>> mvccVersions = new HashMap<Integer,List<MvccVersion>>();
+    final List<ThreadTransactionContext> activeTransactions = new ArrayList<ThreadTransactionContext>();
+    final Object mvccLock = new Object();
     /**
      * Initialial database index size - increasing it reduce number of index reallocation but increase
      * initial database size. Should be set before openning connection.
@@ -104,6 +167,27 @@ public class StorageImpl implements Storage {
     }
 
     final byte[] get(int oid) {
+        ThreadTransactionContext ctx = getTransactionContext();
+        if (ctx != null && ctx.startTimestamp != 0) {
+            synchronized (mvccLock) {
+                List<MvccVersion> list = mvccVersions.get(oid);
+                if (list != null) {
+                    long ts = ctx.startTimestamp;
+                    MvccVersion best = null;
+                    for (MvccVersion v : list) {
+                        long end = v.commitTimestamp == 0 ? Long.MAX_VALUE : v.commitTimestamp;
+                        if (v.startTimestamp <= ts && end > ts) {
+                            if (best == null || v.startTimestamp > best.startTimestamp) {
+                                best = v;
+                            }
+                        }
+                    }
+                    if (best != null) {
+                        return best.data;
+                    }
+                }
+            }
+        }
         long pos = getPos(oid);
         if ((pos & (dbFreeHandleFlag|dbPageObjectFlag)) != 0) {
             throw new StorageError(StorageError.INVALID_OID);
@@ -2764,6 +2848,14 @@ public class StorageImpl implements Storage {
     @Override
     public void beginThreadTransaction(TransactionMode mode)
     {
+        ThreadTransactionContext ctx = getTransactionContext();
+        if (ctx.startTimestamp == 0) {
+            ctx.startTimestamp = System.currentTimeMillis();
+            ctx.commitTimestamp = 0;
+            synchronized (activeTransactions) {
+                activeTransactions.add(ctx);
+            }
+        }
         switch (mode) {
         case SERIALIZABLE:
             if (multiclientSupport) {
@@ -2887,6 +2979,12 @@ public class StorageImpl implements Storage {
                 modified.clear();
                 deleted.clear();
                 locked.clear();
+                ctx.commitTimestamp = System.currentTimeMillis();
+                finalizeVersions(ctx, true);
+                synchronized (activeTransactions) {
+                    activeTransactions.remove(ctx);
+                }
+                ctx.startTimestamp = 0;
             }
         } else { // exclusive or cooperative transaction
             synchronized (transactionMonitor) {
@@ -2896,6 +2994,12 @@ public class StorageImpl implements Storage {
                     if (--nNestedTransactions == 0) {
                         nCommittedTransactions += 1;
                         commit();
+                        ctx.commitTimestamp = System.currentTimeMillis();
+                        finalizeVersions(ctx, true);
+                        synchronized (activeTransactions) {
+                            activeTransactions.remove(ctx);
+                        }
+                        ctx.startTimestamp = 0;
                         scheduledCommitTime = Long.MAX_VALUE;
                         if (nBlockedTransactions != 0) {
                             transactionMonitor.notifyAll();
@@ -2968,6 +3072,12 @@ public class StorageImpl implements Storage {
             modified.clear();
             ctx.deleted.clear();
             locked.clear();
+            ctx.commitTimestamp = 0;
+            finalizeVersions(ctx, false);
+            synchronized (activeTransactions) {
+                activeTransactions.remove(ctx);
+            }
+            ctx.startTimestamp = 0;
             if (listener != null) {
                 listener.onTransactionRollback();
             }
@@ -2979,6 +3089,12 @@ public class StorageImpl implements Storage {
                     transactionMonitor.notifyAll();
                 }
                 rollback();
+                ctx.commitTimestamp = 0;
+                finalizeVersions(ctx, false);
+                synchronized (activeTransactions) {
+                    activeTransactions.remove(ctx);
+                }
+                ctx.startTimestamp = 0;
             }
         }
     }
@@ -3506,6 +3622,18 @@ public class StorageImpl implements Storage {
                 }
             }
             modified = true;
+            ThreadTransactionContext ctx = getTransactionContext();
+            if (ctx != null && ctx.startTimestamp != 0) {
+                MvccVersion ver = new MvccVersion(data.clone(), ctx.startTimestamp);
+                synchronized (mvccLock) {
+                    List<MvccVersion> list = mvccVersions.get(oid);
+                    if (list == null) {
+                        list = new ArrayList<MvccVersion>();
+                        mvccVersions.put(oid, list);
+                    }
+                    list.add(ver);
+                }
+            }
             pool.put(pos, data, newSize);
         } finally {
             lockManager.releaseWrite(oid);
