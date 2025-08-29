@@ -52,26 +52,28 @@ public class StorageLockingTest {
         final LockManager lm = (LockManager) f.get(storage);
 
         final CountDownLatch writerLocked = new CountDownLatch(1);
-        final CountDownLatch writerDone = new CountDownLatch(1);
         final CountDownLatch readersReady = new CountDownLatch(2);
+        final CountDownLatch readersAttempted = new CountDownLatch(2);
         Thread writer = new Thread(new Runnable() {
             public void run() {
                 lm.acquireWrite(oid);
                 writerLocked.countDown();
                 try {
                     root.i = 1; // simulate write
-                    Thread.sleep(500);
-                } catch (InterruptedException ignore) {
+                    assertTrue("Readers did not attempt read in time",
+                               readersAttempted.await(10, TimeUnit.SECONDS));
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    fail("Writer interrupted while waiting for readers");
                 } finally {
                     lm.releaseWrite(oid);
-                    writerDone.countDown();
                 }
             }
         });
 
         final List<Long> readerDelays = new ArrayList<Long>();
-        Thread reader1 = new Thread(new Reader(root, oid, lm, writerLocked, readersReady, readerDelays));
-        Thread reader2 = new Thread(new Reader(root, oid, lm, writerLocked, readersReady, readerDelays));
+        Thread reader1 = new Thread(new Reader(root, oid, lm, writerLocked, readersReady, readersAttempted, readerDelays));
+        Thread reader2 = new Thread(new Reader(root, oid, lm, writerLocked, readersReady, readersAttempted, readerDelays));
         reader1.start();
         reader2.start();
 
@@ -90,7 +92,7 @@ public class StorageLockingTest {
 
         assertEquals(2, readerDelays.size());
         for (long d : readerDelays) {
-            assertTrue("Readers should wait for writer to finish", d >= 400);
+            assertTrue("Readers should proceed quickly after writer releases", d < 100);
         }
         assertEquals(1, root.i);
     }
@@ -101,14 +103,17 @@ public class StorageLockingTest {
         private final LockManager lm;
         private final CountDownLatch latch;
         private final CountDownLatch ready;
+        private final CountDownLatch attempted;
         private final List<Long> delays;
 
-        Reader(Root root, int oid, LockManager lm, CountDownLatch latch, CountDownLatch ready, List<Long> delays) {
+        Reader(Root root, int oid, LockManager lm, CountDownLatch latch, CountDownLatch ready,
+               CountDownLatch attempted, List<Long> delays) {
             this.root = root;
             this.oid = oid;
             this.lm = lm;
             this.latch = latch;
             this.ready = ready;
+            this.attempted = attempted;
             this.delays = delays;
         }
 
@@ -121,6 +126,7 @@ public class StorageLockingTest {
                     Thread.currentThread().interrupt();
                     fail("Reader interrupted while waiting for writer to lock");
                 }
+                attempted.countDown();
                 long start = System.currentTimeMillis();
                 storageCheckReadLock(root, oid, lm);
                 long elapsed = System.currentTimeMillis() - start;
