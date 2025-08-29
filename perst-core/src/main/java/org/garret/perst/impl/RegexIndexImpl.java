@@ -293,7 +293,7 @@ public class RegexIndexImpl<T> extends AltBtreeFieldIndex<T> implements RegexInd
     class JoinRegexIterator extends IterableIterator<T> implements PersistentIterator
     {
         private Iterator<T>[] iterators;
-        private Object  currObj;
+        private T       currObj;
         private int     currOid;
         private String  pattern;
         private Storage storage;
@@ -326,10 +326,10 @@ public class RegexIndexImpl<T> extends AltBtreeFieldIndex<T> implements RegexInd
                             i = 0;
                         }
                     }
-                    Object obj = storage.getObjectByOID(oid1);
+                    T obj = ((Class<T>)RegexIndexImpl.this.getIndexedClass()).cast(storage.getObjectByOID(oid1));
                     String text = extractText(obj);
-                    if (match(text, pattern)) { 
-                        currObj = obj;         
+                    if (match(text, pattern)) {
+                        currObj = obj;
                         currOid = oid1;
                         return true;
                     }
@@ -342,7 +342,7 @@ public class RegexIndexImpl<T> extends AltBtreeFieldIndex<T> implements RegexInd
             if (!hasNext()) { 
                 throw new NoSuchElementException();
             }
-            T obj = (T)currObj;
+            T obj = currObj;
             currObj = null;
             return obj;
         }
