@@ -3386,6 +3386,9 @@ public class StorageImpl implements Storage {
     }
 
     public synchronized <T> T tryReadObject(int oid, Class<T> cls) {
+        if (cls == null) {
+            throw new IllegalArgumentException("cls");
+        }
         if (lockManager.isWriteLocked(oid)) {
             throw new ConcurrentWriteException("Object " + oid + " is locked for write");
         }
@@ -3393,13 +3396,14 @@ public class StorageImpl implements Storage {
         if (obj == null || isRaw(obj)) {
             obj = loadStub(oid, obj, cls);
         }
-        if (cls != null) {
-            if (!cls.isInstance(obj)) {
-                throw new ClassCastException();
-            }
-            return cls.cast(obj);
+        if (!cls.isInstance(obj)) {
+            throw new ClassCastException();
         }
-        return (T)obj;
+        return cls.cast(obj);
+    }
+
+    public synchronized Object tryReadObject(int oid) {
+        return tryReadObject(oid, Object.class);
     }
 
     public <T> CompletableFuture<T> readObjectAsync(int oid, Class<T> cls) {

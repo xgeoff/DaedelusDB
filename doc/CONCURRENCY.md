@@ -13,6 +13,13 @@ MyClass obj = storage.tryReadObject(oid, MyClass.class);
 holds the write lock for the same object a `ConcurrentWriteException` is
 thrown.
 
+When the type of the object is not known in advance an overload without the
+class parameter can be used:
+
+```java
+Object obj = storage.tryReadObject(oid);
+```
+
 ## `readObjectAsync`
 
 ```java
