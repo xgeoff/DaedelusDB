@@ -9,33 +9,32 @@ class AltBtreeMultiFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
     String   className;
     String[] fieldName;
 
-    transient Class   cls;
+    transient Class<T>   cls;
     transient Field[] fld;
 
     AltBtreeMultiFieldIndex() {}
     
-    AltBtreeMultiFieldIndex(Class cls, String[] fieldName, boolean unique) {
+    AltBtreeMultiFieldIndex(Class<T> cls, String[] fieldName, boolean unique) {
         this.cls = cls;
         this.unique = unique;
-        this.fieldName = fieldName;        
+        this.fieldName = fieldName;
         this.className = ClassDescriptor.getClassName(cls);
         locateFields();
-        type = ClassDescriptor.tpValue;        
+        type = ClassDescriptor.tpValue;
     }
 
-    private final void locateFields() 
+    private final void locateFields()
     {
-        Class scope = cls;
         fld = new Field[fieldName.length];
         for (int i = 0; i < fieldName.length; i++) {
             fld[i] = ClassDescriptor.locateField(cls, fieldName[i]);
-            if (fld[i] == null) { 
+            if (fld[i] == null) {
                 throw new StorageError(StorageError.INDEXED_FIELD_NOT_FOUND, className + "." + fieldName[i]);
             }
         }
     }
 
-    public Class getIndexedClass() { 
+    public Class<T> getIndexedClass() {
         return cls;
     }
 
@@ -43,9 +42,10 @@ class AltBtreeMultiFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
         return fld;
     }
 
+    @SuppressWarnings("unchecked")
     public void onLoad()
     {
-        cls = ClassDescriptor.loadClass(getStorage(), className);
+        cls = (Class<T>)ClassDescriptor.loadClass(getStorage(), className);
         locateFields();
     }
 
@@ -235,10 +235,10 @@ class AltBtreeMultiFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
     }
 }
 
-class AltBtreeCaseInsensitiveMultiFieldIndex<T> extends AltBtreeMultiFieldIndex<T> {    
+class AltBtreeCaseInsensitiveMultiFieldIndex<T> extends AltBtreeMultiFieldIndex<T> {
     AltBtreeCaseInsensitiveMultiFieldIndex() {}
 
-    AltBtreeCaseInsensitiveMultiFieldIndex(Class cls, String[] fieldNames, boolean unique) {
+    AltBtreeCaseInsensitiveMultiFieldIndex(Class<T> cls, String[] fieldNames, boolean unique) {
         super(cls, fieldNames, unique);
     }
 

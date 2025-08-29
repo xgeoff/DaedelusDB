@@ -2077,19 +2077,19 @@ public class StorageImpl implements Storage {
         return new RtreeRn<T>(this);
     }
 
-    public <T> FieldIndex<T> createFieldIndex(Class type, String fieldName, boolean unique) {
+    public <T> FieldIndex<T> createFieldIndex(Class<T> type, String fieldName, boolean unique) {
         return this.<T>createFieldIndex(type, fieldName, unique, false);
     }
 
-    public <T> FieldIndex<T> createFieldIndex(Class type, String fieldName, boolean unique, boolean caseInsensitive) {
+    public <T> FieldIndex<T> createFieldIndex(Class<T> type, String fieldName, boolean unique, boolean caseInsensitive) {
         return this.<T>createFieldIndex(type, fieldName, unique, caseInsensitive, false);
     }
 
-    public <T> RegexIndex<T> createRegexIndex(Class type, String fieldName) {
+    public <T> RegexIndex<T> createRegexIndex(Class<T> type, String fieldName) {
         return createRegexIndex(type, fieldName, true, 3);
     }
 
-    public synchronized <T> RegexIndex<T> createRegexIndex(Class type, String fieldName, boolean caseInsensitive, int nGrams)
+    public synchronized <T> RegexIndex<T> createRegexIndex(Class<T> type, String fieldName, boolean caseInsensitive, int nGrams)
     {
          if (!opened) {
             throw new StorageError(StorageError.STORAGE_NOT_OPENED);
@@ -2097,7 +2097,7 @@ public class StorageImpl implements Storage {
          return new RegexIndexImpl<T>(this, type, fieldName, caseInsensitive, nGrams);
     }
 
-    public synchronized <T> FieldIndex<T> createFieldIndex(Class type, String fieldName, boolean unique, boolean caseInsensitive, boolean thick)
+    public synchronized <T> FieldIndex<T> createFieldIndex(Class<T> type, String fieldName, boolean unique, boolean caseInsensitive, boolean thick)
     {
         if (!opened) {
             throw new StorageError(StorageError.STORAGE_NOT_OPENED);
@@ -2117,11 +2117,11 @@ public class StorageImpl implements Storage {
         return index;
     }
 
-    public <T> FieldIndex<T> createFieldIndex(Class type, String[] fieldNames, boolean unique) {
+    public <T> FieldIndex<T> createFieldIndex(Class<T> type, String[] fieldNames, boolean unique) {
         return this.<T>createFieldIndex(type, fieldNames, unique, false);
     }
 
-    public synchronized <T> FieldIndex<T> createFieldIndex(Class type, String[] fieldNames, boolean unique, boolean caseInsensitive) {
+    public synchronized <T> FieldIndex<T> createFieldIndex(Class<T> type, String[] fieldNames, boolean unique, boolean caseInsensitive) {
         if (!opened) {
             throw new StorageError(StorageError.STORAGE_NOT_OPENED);
         }

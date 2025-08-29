@@ -8,7 +8,7 @@ class AltBtreeFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
     String className;
     String fieldName;
     long   autoincCount;
-    transient Class cls;
+    transient Class<T> cls;
     transient Field fld;
 
     AltBtreeFieldIndex() {}
@@ -21,7 +21,7 @@ class AltBtreeFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
         }
     }
 
-    public Class getIndexedClass() { 
+    public Class<T> getIndexedClass() {
         return cls;
     }
 
@@ -29,13 +29,14 @@ class AltBtreeFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
         return new Field[]{fld};
     }
 
+    @SuppressWarnings("unchecked")
     public void onLoad()
     {
-        cls = ClassDescriptor.loadClass(getStorage(), className);
+        cls = (Class<T>)ClassDescriptor.loadClass(getStorage(), className);
         locateField();
     }
 
-    AltBtreeFieldIndex(Class cls, String fieldName, boolean unique) {
+    AltBtreeFieldIndex(Class<T> cls, String fieldName, boolean unique) {
         this.cls = cls;
         this.unique = unique;
         this.fieldName = fieldName;
@@ -246,10 +247,10 @@ class AltBtreeFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
     }
 }
 
-class AltBtreeCaseInsensitiveFieldIndex<T> extends AltBtreeFieldIndex<T> {    
+class AltBtreeCaseInsensitiveFieldIndex<T> extends AltBtreeFieldIndex<T> {
     AltBtreeCaseInsensitiveFieldIndex() {}
 
-    AltBtreeCaseInsensitiveFieldIndex(Class cls, String fieldName, boolean unique) {
+    AltBtreeCaseInsensitiveFieldIndex(Class<T> cls, String fieldName, boolean unique) {
         super(cls, fieldName, unique);
     }
 

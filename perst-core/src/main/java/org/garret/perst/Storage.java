@@ -466,7 +466,7 @@ public interface Storage {
      * @exception StorageError (StorageError.INDEXED_FIELD_NOT_FOUND) if there is no such field in specified class,<BR> 
      * StorageError(StorageError.UNSUPPORTED_INDEX_TYPE) exception if type of specified field is not supported by implementation
      */
-    public <T> FieldIndex<T> createFieldIndex(Class type, String fieldName, boolean unique);
+    public <T> FieldIndex<T> createFieldIndex(Class<T> type, String fieldName, boolean unique);
 
     /**
      * Create new field index
@@ -478,7 +478,7 @@ public interface Storage {
      * @exception StorageError (StorageError.INDEXED_FIELD_NOT_FOUND) if there is no such field in specified class,<BR> 
      * StorageError(StorageError.UNSUPPORTED_INDEX_TYPE) exception if type of specified field is not supported by implementation
      */
-    public <T> FieldIndex<T> createFieldIndex(Class type, String fieldName, boolean unique, boolean caseInsensitive);
+    public <T> FieldIndex<T> createFieldIndex(Class<T> type, String fieldName, boolean unique, boolean caseInsensitive);
     /**
      * Create new field index
      * @param type objects of which type (or derived from which type) will be included in the index
@@ -490,7 +490,7 @@ public interface Storage {
      * @exception StorageError (StorageError.INDEXED_FIELD_NOT_FOUND) if there is no such field in specified class,<BR> 
      * StorageError(StorageError.UNSUPPORTED_INDEX_TYPE) exception if type of specified field is not supported by implementation
      */
-    public <T> FieldIndex<T> createFieldIndex(Class type, String fieldName, boolean unique, boolean caseInsensitive, boolean thick);
+    public <T> FieldIndex<T> createFieldIndex(Class<T> type, String fieldName, boolean unique, boolean caseInsensitive, boolean thick);
 
     /**
      * Create new mutlifield index
@@ -501,7 +501,7 @@ public interface Storage {
      * @exception StorageError (StorageError.INDEXED_FIELD_NOT_FOUND) if there is no such field in specified class,<BR> 
      * StorageError(StorageError.UNSUPPORTED_INDEX_TYPE) exception if type of specified field is not supported by implementation
      */
-    public <T> FieldIndex<T> createFieldIndex(Class type, String[] fieldNames, boolean unique);
+    public <T> FieldIndex<T> createFieldIndex(Class<T> type, String[] fieldNames, boolean unique);
 
     /**
      * Create new mutlifield index
@@ -513,7 +513,7 @@ public interface Storage {
      * @exception StorageError (StorageError.INDEXED_FIELD_NOT_FOUND) if there is no such field in specified class,<BR> 
      * StorageError(StorageError.UNSUPPORTED_INDEX_TYPE) exception if type of specified field is not supported by implementation
      */
-    public <T> FieldIndex<T> createFieldIndex(Class type, String[] fieldNames, boolean unique, boolean caseInsensitive);
+    public <T> FieldIndex<T> createFieldIndex(Class<T> type, String[] fieldNames, boolean unique, boolean caseInsensitive);
 
     /**
      * Create new n-gram string field index for regular expression search
@@ -525,7 +525,7 @@ public interface Storage {
      * @exception StorageError (StorageError.INDEXED_FIELD_NOT_FOUND) if there is no such field in specified class,<BR> 
      * StorageError(StorageError.INCOMPATIBLE_KEY_TYPE) exception if type of specified field is not string
      */
-    public <T> RegexIndex<T> createRegexIndex(Class type, String fieldName, boolean caseInsensitive, int nGrams);
+    public <T> RegexIndex<T> createRegexIndex(Class<T> type, String fieldName, boolean caseInsensitive, int nGrams);
 
     /**
      * Create new 3-gram case insensitive  string field index for regular expression search
@@ -535,7 +535,7 @@ public interface Storage {
      * @exception StorageError (StorageError.INDEXED_FIELD_NOT_FOUND) if there is no such field in specified class,<BR> 
      * StorageError(StorageError.INCOMPATIBLE_KEY_TYPE) exception if type of specified field is not string
      */
-    public <T> RegexIndex<T> createRegexIndex(Class type, String fieldName); 
+    public <T> RegexIndex<T> createRegexIndex(Class<T> type, String fieldName);
 
     /**
      * Create new index optimized for access by element position.

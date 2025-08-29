@@ -23,19 +23,18 @@ class RndBtreeMultiFieldIndex<T> extends RndBtree<T> implements FieldIndex<T> {
         type = ClassDescriptor.tpValue;        
     }
 
-    private final void locateFields() 
+    private final void locateFields()
     {
-        Class scope = cls;
         fld = new Field[fieldName.length];
         for (int i = 0; i < fieldName.length; i++) {
             fld[i] = ClassDescriptor.locateField(cls, fieldName[i]);
-            if (fld[i] == null) { 
+            if (fld[i] == null) {
                 throw new StorageError(StorageError.INDEXED_FIELD_NOT_FOUND, className + "." + fieldName[i]);
             }
         }
     }
 
-    public Class getIndexedClass() { 
+    public Class<T> getIndexedClass() {
         return cls;
     }
 

@@ -22,7 +22,7 @@ class BtreeFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
     String className;
     String fieldName;
     long   autoincCount;
-    transient Class cls;
+    transient Class<T> cls;
     transient Field fld;
 
     BtreeFieldIndex() {}
@@ -35,7 +35,7 @@ class BtreeFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
         }
     }
 
-    public Class getIndexedClass() { 
+    public Class<T> getIndexedClass() {
         return cls;
     }
 
@@ -43,17 +43,18 @@ class BtreeFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
         return new Field[]{fld};
     }
 
+    @SuppressWarnings("unchecked")
     public void onLoad()
     {
-        cls = ClassDescriptor.loadClass(getStorage(), className);
+        cls = (Class<T>)ClassDescriptor.loadClass(getStorage(), className);
         locateField();
     }
 
-    BtreeFieldIndex(Class cls, String fieldName, boolean unique) {
+    BtreeFieldIndex(Class<T> cls, String fieldName, boolean unique) {
         this(cls, fieldName, unique, 0);
     }
 
-    BtreeFieldIndex(Class cls, String fieldName, boolean unique, long autoincCount) {
+    BtreeFieldIndex(Class<T> cls, String fieldName, boolean unique, long autoincCount) {
         this.cls = cls;
         this.unique = unique;
         this.fieldName = fieldName;
@@ -265,14 +266,14 @@ class BtreeFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
     }
 }
 
-class BtreeCaseInsensitiveFieldIndex<T>  extends BtreeFieldIndex<T> {    
+class BtreeCaseInsensitiveFieldIndex<T>  extends BtreeFieldIndex<T> {
     BtreeCaseInsensitiveFieldIndex() {}
 
-    BtreeCaseInsensitiveFieldIndex(Class cls, String fieldName, boolean unique) {
+    BtreeCaseInsensitiveFieldIndex(Class<T> cls, String fieldName, boolean unique) {
         super(cls, fieldName, unique);
     }
 
-    BtreeCaseInsensitiveFieldIndex(Class cls, String fieldName, boolean unique, long autoincCount) {
+    BtreeCaseInsensitiveFieldIndex(Class<T> cls, String fieldName, boolean unique, long autoincCount) {
         super(cls, fieldName, unique, autoincCount);
     }
 

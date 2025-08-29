@@ -21,7 +21,7 @@ class RndBtreeFieldIndex<T> extends RndBtree<T> implements FieldIndex<T> {
         }
     }
 
-    public Class getIndexedClass() { 
+    public Class<T> getIndexedClass() {
         return cls;
     }
 

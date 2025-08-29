@@ -84,10 +84,10 @@ public interface FieldIndex<T> extends GenericIndex<T>
     public IterableIterator<T> queryByExample(T obj);
 
     /**
-     * Get class obejct objects which can be inserted in this index
-     * @return class specified in Storage.createFielIndex method
+     * Get class object of objects which can be inserted in this index
+     * @return class specified in Storage.createFieldIndex method
      */
-    public Class getIndexedClass();
+    public Class<T> getIndexedClass();
 
     /**
      * Get fields used as a key

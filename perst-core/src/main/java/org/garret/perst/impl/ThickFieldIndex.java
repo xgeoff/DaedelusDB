@@ -8,7 +8,7 @@ class ThickFieldIndex<T> extends ThickIndex<T> implements FieldIndex<T>
 {
     String fieldName;
     int type;
-    Class cls;
+    Class<T> cls;
     transient Field fld;
     
     static Field locateField(Class cls, String fieldName) {
@@ -23,7 +23,7 @@ class ThickFieldIndex<T> extends ThickIndex<T> implements FieldIndex<T>
         fld = locateField(cls, fieldName);
     }
     
-    public Class getIndexedClass() { 
+    public Class<T> getIndexedClass() {
         return cls;
     }
 
@@ -38,11 +38,11 @@ class ThickFieldIndex<T> extends ThickIndex<T> implements FieldIndex<T>
 
     ThickFieldIndex() {}
 
-    ThickFieldIndex(StorageImpl db, Class cls, String fieldName) {
+    ThickFieldIndex(StorageImpl db, Class<T> cls, String fieldName) {
         this(db, cls, fieldName, locateField(cls, fieldName));
     }
 
-    ThickFieldIndex(StorageImpl db, Class cls, String fieldName, Field fld) {
+    ThickFieldIndex(StorageImpl db, Class<T> cls, String fieldName, Field fld) {
         super(db, fld.getType());
         type = Btree.checkType(fld.getType());
         this.cls = cls;
@@ -231,10 +231,10 @@ class ThickFieldIndex<T> extends ThickIndex<T> implements FieldIndex<T>
     }
 }
 
-class ThickCaseInsensitiveFieldIndex<T>  extends ThickFieldIndex<T> {    
+class ThickCaseInsensitiveFieldIndex<T>  extends ThickFieldIndex<T> {
     ThickCaseInsensitiveFieldIndex() {}
 
-    ThickCaseInsensitiveFieldIndex(StorageImpl db, Class cls, String fieldName) {
+    ThickCaseInsensitiveFieldIndex(StorageImpl db, Class<T> cls, String fieldName) {
         super(db, cls, fieldName);
     }
 

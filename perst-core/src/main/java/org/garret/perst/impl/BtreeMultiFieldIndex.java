@@ -30,18 +30,18 @@ class BtreeMultiFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
     String[] fieldName;
     int[]    types;
 
-    transient Class   cls;
+    transient Class<T>   cls;
     transient Field[] fld;
 
     BtreeMultiFieldIndex() {}
     
-    BtreeMultiFieldIndex(Class cls, String[] fieldName, boolean unique) {
+    BtreeMultiFieldIndex(Class<T> cls, String[] fieldName, boolean unique) {
         this.cls = cls;
         this.unique = unique;
-        this.fieldName = fieldName;        
+        this.fieldName = fieldName;
         this.className = ClassDescriptor.getClassName(cls);
         locateFields();
-        type = ClassDescriptor.tpArrayOfByte;        
+        type = ClassDescriptor.tpArrayOfByte;
         types = new int[fieldName.length];
         for (int i = 0; i < types.length; i++) {
             types[i] = checkType(fld[i].getType());
@@ -59,7 +59,7 @@ class BtreeMultiFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
         }
     }
 
-    public Class getIndexedClass() { 
+    public Class<T> getIndexedClass() {
         return cls;
     }
 
@@ -67,9 +67,10 @@ class BtreeMultiFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
         return fld;
     }
 
+    @SuppressWarnings("unchecked")
     public void onLoad()
     {
-        cls = ClassDescriptor.loadClass(getStorage(), className);
+        cls = (Class<T>)ClassDescriptor.loadClass(getStorage(), className);
         locateFields();
     }
 
@@ -624,10 +625,10 @@ class BtreeMultiFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
 }
 
 
-class BtreeCaseInsensitiveMultiFieldIndex<T> extends BtreeMultiFieldIndex<T> {    
+class BtreeCaseInsensitiveMultiFieldIndex<T> extends BtreeMultiFieldIndex<T> {
     BtreeCaseInsensitiveMultiFieldIndex() {}
 
-    BtreeCaseInsensitiveMultiFieldIndex(Class cls, String[] fieldNames, boolean unique) {
+    BtreeCaseInsensitiveMultiFieldIndex(Class<T> cls, String[] fieldNames, boolean unique) {
         super(cls, fieldNames, unique);
     }
 

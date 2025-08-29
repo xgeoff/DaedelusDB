@@ -11,8 +11,8 @@ public class RegexIndexImpl<T> extends AltBtreeFieldIndex<T> implements RegexInd
     Index<Set<T>> inverseIndex;
 
     RegexIndexImpl() {}
-    
-    RegexIndexImpl(StorageImpl db, Class cls, String fieldName, boolean caseInsensitive, int nGrams) {
+
+    RegexIndexImpl(StorageImpl db, Class<T> cls, String fieldName, boolean caseInsensitive, int nGrams) {
         super(cls, fieldName, false);
         if (type != ClassDescriptor.tpString) { 
             throw new StorageError(StorageError.INCOMPATIBLE_KEY_TYPE);
@@ -326,7 +326,8 @@ public class RegexIndexImpl<T> extends AltBtreeFieldIndex<T> implements RegexInd
                             i = 0;
                         }
                     }
-                    T obj = ((Class<T>)RegexIndexImpl.this.getIndexedClass()).cast(storage.getObjectByOID(oid1));
+                    Class<T> cls = RegexIndexImpl.this.getIndexedClass();
+                    T obj = cls.cast(storage.getObjectByOID(oid1));
                     String text = extractText(obj);
                     if (match(text, pattern)) {
                         currObj = obj;
