@@ -7,6 +7,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.garret.perst.impl.LockManager;
 import org.garret.perst.impl.StorageImpl;
@@ -75,7 +76,12 @@ public class StorageLockingTest {
         reader2.start();
 
         // Ensure both readers are waiting before starting the writer
-        readersReady.await();
+        try {
+            assertTrue("Readers not ready before timeout", readersReady.await(10, TimeUnit.SECONDS));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            fail("Interrupted while waiting for readers to be ready");
+        }
         writer.start();
 
         writer.join();
@@ -109,14 +115,20 @@ public class StorageLockingTest {
         public void run() {
             try {
                 ready.countDown();
-                latch.await();
+                try {
+                    assertTrue("Timed out waiting for writer to lock", latch.await(10, TimeUnit.SECONDS));
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    fail("Reader interrupted while waiting for writer to lock");
+                }
                 long start = System.currentTimeMillis();
                 storageCheckReadLock(root, oid, lm);
                 long elapsed = System.currentTimeMillis() - start;
                 synchronized (delays) {
                     delays.add(elapsed);
                 }
-            } catch (InterruptedException ignore) {
+            } catch (Exception e) {
+                fail("Unexpected exception in reader: " + e.getMessage());
             }
         }
 

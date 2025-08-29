@@ -7,6 +7,7 @@ import org.junit.Assert;
 
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class ContinuousModeTest {
     static class Counter extends CVersion {
@@ -53,7 +54,12 @@ public class ContinuousModeTest {
             }).start();
         }
 
-        latch.await();
+        try {
+            Assert.assertTrue("Worker threads did not finish in time", latch.await(10, TimeUnit.SECONDS));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            Assert.fail("Interrupted while waiting for worker threads to finish");
+        }
         db.beginTransaction();
         Counter c = db.getSingleton(db.<Counter>find(Counter.class, "id", new Key(1)));
         Assert.assertEquals(threads * iterations, c.value);
