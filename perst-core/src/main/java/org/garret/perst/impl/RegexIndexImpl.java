@@ -176,14 +176,15 @@ public class RegexIndexImpl<T> extends AltBtreeFieldIndex<T> implements RegexInd
             if (ngrams.size() == 0) { // no n-grams: have to use sequential scan 
                 return new RegexIterator(iterator(), pattern);
             }
-            Set[] sets = new Set[ngrams.size()];
-            for (int i = 0; i < sets.length; i++) { 
-                Set set = inverseIndex.get(ngrams.get(i));
-                if (set == null) { 
+            @SuppressWarnings("unchecked")
+            Set<T>[] sets = (Set<T>[]) new Set[ngrams.size()];
+            for (int i = 0; i < sets.length; i++) {
+                Set<T> set = inverseIndex.get(ngrams.get(i));
+                if (set == null) {
                     return new EmptyIterator<T>();
-                } 
+                }
                 sets[i] = set;
-            }        
+            }
             return new JoinRegexIterator(sets, pattern);
         }
     }
@@ -289,20 +290,21 @@ public class RegexIndexImpl<T> extends AltBtreeFieldIndex<T> implements RegexInd
         }
     }              
         
-    class JoinRegexIterator<T> extends IterableIterator<T> implements PersistentIterator 
-    { 
-        private PersistentIterator[] iterators;
+    class JoinRegexIterator extends IterableIterator<T> implements PersistentIterator
+    {
+        private Iterator<T>[] iterators;
         private Object  currObj;
         private int     currOid;
         private String  pattern;
         private Storage storage;
         
-        JoinRegexIterator(Set[] sets, String pattern) { 
+        @SuppressWarnings("unchecked")
+        JoinRegexIterator(Set<T>[] sets, String pattern) {
             storage = getStorage();
             this.pattern  = pattern;
-            iterators = new PersistentIterator[sets.length];
-            for (int i = 0; i < sets.length; i++) { 
-                iterators[i] = (PersistentIterator)sets[i].iterator();
+            iterators = (Iterator<T>[]) new Iterator[sets.length];
+            for (int i = 0; i < sets.length; i++) {
+                iterators[i] = sets[i].iterator();
             }
         }
         
@@ -312,9 +314,9 @@ public class RegexIndexImpl<T> extends AltBtreeFieldIndex<T> implements RegexInd
                 int n = iterators.length;
                 while (true) { 
                     for (int i = 0, j = 0; i < n; j++, i++) {
-                        do { 
-                            oid2 = iterators[j % n].nextOid();
-                            if (oid2 == 0) { 
+                        do {
+                            oid2 = ((PersistentIterator)iterators[j % n]).nextOid();
+                            if (oid2 == 0) {
                                 return false;
                             }
                         } while (oid2 < oid1);
