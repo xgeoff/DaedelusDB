@@ -13,6 +13,15 @@ class AltBtreeMultiFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
     transient Field[] fld;
 
     AltBtreeMultiFieldIndex() {}
+
+    @SuppressWarnings("unchecked")
+    private T[] newArray(int size) {
+        Object array = Array.newInstance(cls, size);
+        if (array.getClass().getComponentType() != cls) {
+            throw new ArrayStoreException();
+        }
+        return (T[]) array;
+    }
     
     AltBtreeMultiFieldIndex(Class<T> cls, String[] fieldName, boolean unique) {
         this.cls = cls;
@@ -196,11 +205,11 @@ class AltBtreeMultiFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
     }
 
     public T[] get(Key from, Key till) {
-        ArrayList list = new ArrayList();
-        if (root != null) { 
+        ArrayList<T> list = new ArrayList<>();
+        if (root != null) {
             root.find(convertKey(from), convertKey(till), height, list);
         }
-        return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));
+        return list.toArray(newArray(list.size()));
     }
 
     public T[] getPrefix(String prefix) {
@@ -213,7 +222,7 @@ class AltBtreeMultiFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
     }
 
     public T[] toArray() {
-        T[] arr = (T[])Array.newInstance(cls, nElems);
+        T[] arr = newArray(nElems);
         if (root != null) { 
             root.traverseForward(height, arr, 0);
         }

@@ -219,7 +219,7 @@ class RndBtreeMultiFieldIndex<T> extends RndBtree<T> implements FieldIndex<T> {
     }
 
     public T[] toArray() {
-        T[] arr = (T[])Array.newInstance(cls, nElems);
+        T[] arr = newArray(nElems);
         if (root != null) { 
             root.traverseForward(height, arr, 0);
         }

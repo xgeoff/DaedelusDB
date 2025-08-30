@@ -26,6 +26,15 @@ class BtreeFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
     transient Field fld;
 
     BtreeFieldIndex() {}
+
+    @SuppressWarnings("unchecked")
+    private T[] newArray(int size) {
+        Object array = Array.newInstance(cls, size);
+        if (array.getClass().getComponentType() != cls) {
+            throw new ArrayStoreException();
+        }
+        return (T[]) array;
+    }
     
     private final void locateField() 
     {
@@ -235,24 +244,24 @@ class BtreeFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
 
     public T[] getPrefix(String prefix) { 
         ArrayList<T> list = getList(new Key(prefix, true), new Key(prefix + Character.MAX_VALUE, false));
-        return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));        
+        return list.toArray(newArray(list.size()));
     }
 
     public T[] prefixSearch(String key) { 
         ArrayList<T> list = prefixSearchList(key);
-        return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));
+        return list.toArray(newArray(list.size()));
     }
 
     public T[] get(Key from, Key till) {
-        ArrayList list = new ArrayList();
-        if (root != 0) { 
+        ArrayList<T> list = new ArrayList<>();
+        if (root != 0) {
             BtreePage.find((StorageImpl)getStorage(), root, checkKey(from), checkKey(till), this, height, list);
         }
-        return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));
+        return list.toArray(newArray(list.size()));
     }
 
     public T[] toArray() {
-        T[] arr = (T[])Array.newInstance(cls, nElems);
+        T[] arr = newArray(nElems);
         if (root != 0) { 
             BtreePage.traverseForward((StorageImpl)getStorage(), root, type, height, arr, 0);
         }
