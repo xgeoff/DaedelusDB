@@ -27,7 +27,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
 
     static abstract class BtreePage extends Persistent { 
         int  nItems;
-        Link items;
+        Link<Object> items;
         int[] nChildren;
 
         static final int BTREE_PAGE_SIZE = Page.pageSize - ObjectHeader.sizeof - 4*4;
@@ -411,10 +411,10 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
             return pos;
         }
 
-        BtreePage(Storage s, int n) 
-        { 
+        BtreePage(Storage s, int n)
+        {
             super(s);
-            items = s.createLink(n);
+            items = s.<Object>createLink(n);
             items.setSize(n);
             nChildren = new int[n];
         }
@@ -711,7 +711,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
 
 
     static class BtreePageOfObject extends BtreePage { 
-        Link data; 
+        Link<Object> data;
 
         static final int MAX_ITEMS = BTREE_PAGE_SIZE / (4 + 4 + 4);
             
@@ -744,7 +744,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
 
         BtreePageOfObject(Storage s) {
             super(s, MAX_ITEMS);
-            data = s.createLink(MAX_ITEMS);
+            data = s.<Object>createLink(MAX_ITEMS);
             data.setSize(MAX_ITEMS);
         }
 
@@ -863,7 +863,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
 
         int compare(Key key, int i) {
-            return ((Comparable)key.oval).compareTo(data[i]);
+            return ((Comparable<Object>)key.oval).compareTo(data[i]);
         }
 
         void insert(BtreeKey key, int i) { 
