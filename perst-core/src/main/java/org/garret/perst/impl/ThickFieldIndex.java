@@ -10,6 +10,15 @@ class ThickFieldIndex<T> extends ThickIndex<T> implements FieldIndex<T>
     int type;
     Class<T> cls;
     transient Field fld;
+
+    @SuppressWarnings("unchecked")
+    private T[] newArray(int size) {
+        Object array = Array.newInstance(cls, size);
+        if (array.getClass().getComponentType() != cls) {
+            throw new ArrayStoreException();
+        }
+        return (T[]) array;
+    }
     
     static Field locateField(Class cls, String fieldName) {
         Field fld = ClassDescriptor.locateField(cls, fieldName);
@@ -193,11 +202,12 @@ class ThickFieldIndex<T> extends ThickIndex<T> implements FieldIndex<T>
     }
 
     protected Object[] extend(Object[] s) { 
-        ArrayList list = new ArrayList();
-        for (int i = 0; i < s.length; i++) { 
-            list.addAll((Collection)s[i]);
+        @SuppressWarnings("unchecked")
+        ArrayList<T> list = new ArrayList<>();
+        for (int i = 0; i < s.length; i++) {
+            list.addAll((Collection<? extends T>)s[i]);
         }
-        return list.toArray((T[])Array.newInstance(cls, list.size()));        
+        return list.toArray(newArray(list.size()));
     }
          
     public T[] prefixSearch(String key) { 

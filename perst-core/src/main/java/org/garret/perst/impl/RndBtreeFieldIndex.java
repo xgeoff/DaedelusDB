@@ -12,6 +12,15 @@ class RndBtreeFieldIndex<T> extends RndBtree<T> implements FieldIndex<T> {
     transient Field fld;
 
     RndBtreeFieldIndex() {}
+
+    @SuppressWarnings("unchecked")
+    private T[] newArray(int size) {
+        Object array = Array.newInstance(cls, size);
+        if (array.getClass().getComponentType() != cls) {
+            throw new ArrayStoreException();
+        }
+        return (T[]) array;
+    }
     
     private final void locateField() 
     {
@@ -215,24 +224,24 @@ class RndBtreeFieldIndex<T> extends RndBtree<T> implements FieldIndex<T> {
 
     public T[] getPrefix(String prefix) { 
         ArrayList<T> list = getList(new Key(prefix, true), new Key(prefix + Character.MAX_VALUE, false));
-        return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));        
+        return list.toArray(newArray(list.size()));
     }
 
     public T[] prefixSearch(String key) { 
         ArrayList<T> list = prefixSearchList(key);
-        return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));
+        return list.toArray(newArray(list.size()));
     }
 
     public T[] get(Key from, Key till) {
-        ArrayList<T> list = new ArrayList();
-        if (root != null) { 
+        ArrayList<T> list = new ArrayList<>();
+        if (root != null) {
             root.find(checkKey(from), checkKey(till), height, list);
         }
-        return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));
+        return list.toArray(newArray(list.size()));
     }
 
     public T[] toArray() {
-        T[] arr = (T[])Array.newInstance(cls, nElems);
+        T[] arr = newArray(nElems);
         if (root != null) { 
             root.traverseForward(height, arr, 0);
         }

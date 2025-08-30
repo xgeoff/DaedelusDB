@@ -34,6 +34,15 @@ class BtreeMultiFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
     transient Field[] fld;
 
     BtreeMultiFieldIndex() {}
+
+    @SuppressWarnings("unchecked")
+    private T[] newArray(int size) {
+        Object array = Array.newInstance(cls, size);
+        if (array.getClass().getComponentType() != cls) {
+            throw new ArrayStoreException();
+        }
+        return (T[]) array;
+    }
     
     BtreeMultiFieldIndex(Class<T> cls, String[] fieldName, boolean unique) {
         this.cls = cls;
@@ -581,11 +590,11 @@ class BtreeMultiFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
     }
 
     public T[] get(Key from, Key till) {
-        ArrayList list = new ArrayList();
-        if (root != 0) { 
+        ArrayList<T> list = new ArrayList<>();
+        if (root != 0) {
             BtreePage.find((StorageImpl)getStorage(), root, convertKey(from), convertKey(till), this, height, list);
         }
-        return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));
+        return list.toArray(newArray(list.size()));
     }
 
     public T[] getPrefix(String prefix) {
@@ -599,7 +608,7 @@ class BtreeMultiFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
         
 
     public T[] toArray() {
-        T[] arr = (T[])Array.newInstance(cls, nElems);
+        T[] arr = newArray(nElems);
         if (root != 0) { 
             BtreePage.traverseForward((StorageImpl)getStorage(), root, type, height, arr, 0);
         }
