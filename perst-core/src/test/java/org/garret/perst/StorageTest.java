@@ -66,7 +66,7 @@ public class StorageTest {
      */
     @Test
     public void testOpen(){
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         assertTrue(storage.isOpened());
     }
 
@@ -86,7 +86,7 @@ public class StorageTest {
      */
     @Test
     public void testCreateQuery(){
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         assertTrue(storage.isOpened());
         Query q = storage.createQuery();
         assertNotNull(q);
@@ -108,7 +108,7 @@ public class StorageTest {
      */
     @Test
     public void testCreateIndex() {
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         assertTrue(storage.isOpened());
         Index<Root> idx = storage.createIndex(Root.class, false);
         assertNotNull(idx);
@@ -130,7 +130,7 @@ public class StorageTest {
      */
     @Test
     public void testCreateFieldIndex() {
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         assertTrue(storage.isOpened());
         FieldIndex<Root> idx = storage.createFieldIndex(Root.class, "i", false);
         assertNotNull(idx);
@@ -152,7 +152,7 @@ public class StorageTest {
      */
     @Test
     public void testCreateLink() {
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         assertTrue(storage.isOpened());
         Link<Root> l = storage.createLink();
         assertNotNull(l);
@@ -174,7 +174,7 @@ public class StorageTest {
      */
     @Test
     public void testCreateBlob() {
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         assertTrue(storage.isOpened());
         Blob b = storage.createBlob();
         assertNotNull(b);
@@ -196,7 +196,7 @@ public class StorageTest {
      */
     @Test
     public void testCreateSet(){
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         assertTrue(storage.isOpened());
         IPersistentSet<Stored> ps = storage.createSet();
         assertNotNull(ps);
@@ -218,7 +218,7 @@ public class StorageTest {
      */
     @Test
     public void testGetRoot(){
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         assertNull(storage.getRoot());
     }
 
@@ -240,7 +240,7 @@ public class StorageTest {
      */
     @Test
     public void testSetRoot(){
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         Root root = new Root(storage.<Stored>createSet());
         storage.setRoot(root);
         assertEquals(storage.getRoot(), root);
@@ -266,7 +266,7 @@ public class StorageTest {
      */
     @Test
     public void testCommit(){
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         Root root = new Root(storage.<Stored>createSet());
         root.i = 64;
         storage.setRoot(root);
@@ -294,7 +294,7 @@ public class StorageTest {
      */
     @Test
     public void testTransaction00(){
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         Root root = new Root(storage.<Stored>createSet());
         root.i = 128;
         storage.setRoot(root);
@@ -327,7 +327,7 @@ public class StorageTest {
      */
     @Test
     public void testTransaction01(){
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         Root root = new Root(storage.<Stored>createSet());
         root.i = 10;
         storage.setRoot(root);
@@ -354,7 +354,7 @@ public class StorageTest {
      */
     @Test
     public void testTransaction02(){
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         Root root = new Root(storage.<Stored>createSet());
         storage.setRoot(root);
         storage.commit();
@@ -381,7 +381,7 @@ public class StorageTest {
      */
     @Test
     public void testTransaction03(){
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         Root root = new Root(storage.<Stored>createSet());
         storage.setRoot(root);
         root.records.add(new Stored("rec1"));
@@ -411,7 +411,7 @@ public class StorageTest {
      */
     @Test
     public void testStorageListener00() {
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         TestStorageListener listener = new TestStorageListener();
         Root root = new Root(storage.<Stored>createSet());
         storage.setRoot(root);
@@ -439,7 +439,7 @@ public class StorageTest {
      */
     @Test
     public void testStorageListener01() {
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTest.dbs", INFINITE_PAGE_POOL);
         TestStorageListener listener = new TestStorageListener();
         Root root = new Root(storage.<Stored>createSet());
         storage.setRoot(root);
@@ -480,6 +480,7 @@ public class StorageTest {
         Root root = new Root(storage.<Stored>createSet());
         root.i = 25;
         storage.setRoot(root);
+        storage.commit();
         storage.close();
         storage.open("StorageTest.dbs");
         root = (Root) storage.getRoot();
@@ -511,6 +512,7 @@ public class StorageTest {
         String str = "test string";
         root.s = str;
         storage.setRoot(root);
+        storage.commit();
         storage.close();
         storage.open("StorageTest.dbs");
         root = (Root) storage.getRoot();
@@ -542,6 +544,7 @@ public class StorageTest {
         double d = 12345E-42;
         root.d = d;
         storage.setRoot(root);
+        storage.commit();
         storage.close();
         storage.open("StorageTest.dbs");
         root = (Root) storage.getRoot();
@@ -571,8 +574,9 @@ public class StorageTest {
         storage.open("StorageTest.dbs");
         Root root = new Root(null);
         root.next = new Root(null);
-        root.next.i = 25;
+       root.next.i = 25;
         storage.setRoot(root);
+        storage.commit();
         storage.close();
         storage.open("StorageTest.dbs");
         root = (Root) storage.getRoot();

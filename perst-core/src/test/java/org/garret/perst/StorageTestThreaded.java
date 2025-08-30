@@ -45,6 +45,9 @@ public class StorageTestThreaded {
     public void tearDown() throws Exception {
         if (storage.isOpened())
             storage.close();
+        try {
+            new java.io.File("StorageTestThreaded.dbs").delete();
+        } catch (Exception ignore) {}
     }
 
     /**
@@ -64,7 +67,7 @@ public class StorageTestThreaded {
      */
     @Test
     public void testThreadExclusive() {
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTestThreaded.dbs", INFINITE_PAGE_POOL);
         storage.setRoot(new Root());
         storage.commit();
         new TestThreadExclusive(storage);
@@ -98,7 +101,7 @@ public class StorageTestThreaded {
      */
     @Test
     public void testThreadSerializable() {
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageTestThreaded.dbs", INFINITE_PAGE_POOL);
         storage.setRoot(new Root());
         storage.commit();
         new TestThreadSerializable(storage);

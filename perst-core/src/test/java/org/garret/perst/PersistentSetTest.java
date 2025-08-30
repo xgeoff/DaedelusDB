@@ -41,7 +41,7 @@ public class PersistentSetTest {
     @Before
     public void setUp() throws Exception {
         storage = StorageFactory.getInstance().createStorage();
-        storage.open(new NullFile(), Storage.INFINITE_PAGE_POOL);
+        storage.open("PersistentSetTest.dbs", Storage.INFINITE_PAGE_POOL);
         persistentSet = storage.<Stored>createSet();
     }
 
@@ -49,6 +49,9 @@ public class PersistentSetTest {
     public void tearDown() throws Exception {
         if (storage.isOpened())
             storage.close();
+        try {
+            new java.io.File("PersistentSetTest.dbs").delete();
+        } catch (Exception ignore) {}
     }
 
     /**

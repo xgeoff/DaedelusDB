@@ -7,7 +7,7 @@ public class PatriciaTrieExampleTest {
     @Test
     public void prefixSearch() {
         Storage db = StorageFactory.getInstance().createStorage();
-        db.open(new NullFile(), Storage.INFINITE_PAGE_POOL);
+        db.open("PatriciaTrieExampleTest.dbs", Storage.INFINITE_PAGE_POOL);
         try {
             PatriciaTrie<PersistentString> root = db.createPatriciaTrie();
             db.setRoot(root);
@@ -22,6 +22,9 @@ public class PatriciaTrieExampleTest {
             assertNull(root.findExactMatch(PatriciaTrieKey.from8bitString("123456")));
         } finally {
             db.close();
+            try {
+                new java.io.File("PatriciaTrieExampleTest.dbs").delete();
+            } catch (Exception ignore) {}
         }
     }
 }
