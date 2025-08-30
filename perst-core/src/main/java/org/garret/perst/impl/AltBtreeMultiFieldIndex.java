@@ -57,21 +57,21 @@ class AltBtreeMultiFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
         locateFields();
     }
 
-    static class CompoundKey implements Comparable, IValue {
-        Object[] keys;
+    static class CompoundKey implements Comparable<CompoundKey>, IValue {
+        Comparable<?>[] keys;
 
-        public int compareTo(Object o) { 
-            CompoundKey c = (CompoundKey)o;
-            int n = keys.length < c.keys.length ? keys.length : c.keys.length; 
-            for (int i = 0; i < n; i++) { 
-                if (keys[i] != c.keys[i]) { 
-                    if (keys[i] == null) { 
+        @SuppressWarnings("unchecked")
+        public int compareTo(CompoundKey c) {
+            int n = keys.length < c.keys.length ? keys.length : c.keys.length;
+            for (int i = 0; i < n; i++) {
+                if (keys[i] != c.keys[i]) {
+                    if (keys[i] == null) {
                         return -1;
-                    } else if (c.keys[i] == null) { 
+                    } else if (c.keys[i] == null) {
                         return 1;
-                    } else { 
-                        int diff = ((Comparable)keys[i]).compareTo(c.keys[i]);
-                        if (diff != 0) { 
+                    } else {
+                        int diff = ((Comparable<Object>)keys[i]).compareTo(c.keys[i]);
+                        if (diff != 0) {
                             return diff;
                         }
                     }
@@ -80,7 +80,7 @@ class AltBtreeMultiFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
             return 0;  // allow to compare part of the compound key
         }
 
-        CompoundKey(Object[] keys) { 
+        CompoundKey(Comparable<?>[] keys) {
             this.keys = keys;
         }
     }
@@ -92,20 +92,23 @@ class AltBtreeMultiFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
         if (key.type != ClassDescriptor.tpArrayOfObject) { 
             throw new StorageError(StorageError.INCOMPATIBLE_KEY_TYPE);
         }
-        return new Key(new CompoundKey((Object[])key.oval), key.inclusion != 0);
+        Object[] components = (Object[])key.oval;
+        Comparable[] comps = new Comparable[components.length];
+        System.arraycopy(components, 0, comps, 0, components.length);
+        return new Key(new CompoundKey(comps), key.inclusion != 0);
     }
-            
+
     private Key extractKey(Object obj) {
-        Object[] keys = new Object[fld.length];
-        try { 
-            for (int i = 0; i < keys.length; i++) { 
+        Comparable[] keys = new Comparable[fld.length];
+        try {
+            for (int i = 0; i < keys.length; i++) {
                 Object val = fld[i].get(obj);
-                keys[i] = val;
-                if (!ClassDescriptor.isEmbedded(val)) { 
+                keys[i] = (Comparable)val;
+                if (!ClassDescriptor.isEmbedded(val)) {
                     getStorage().makePersistent(val);
                 }
             }
-        } catch (Exception x) { 
+        } catch (Exception x) {
             throw new StorageError(StorageError.ACCESS_VIOLATION, x);
         }
         return new Key(new CompoundKey(keys));

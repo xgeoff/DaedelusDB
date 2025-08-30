@@ -53,7 +53,9 @@ class AltBtreeCompoundIndex<T> extends AltBtree<T> implements Index<T> {
     }
 
     static class CompoundKey implements Comparable<CompoundKey>, IValue {
-        Object[] keys;
+        Comparable<?>[] keys;
+
+        @SuppressWarnings("unchecked")
         public int compareTo(CompoundKey c) {
             int n = keys.length < c.keys.length ? keys.length : c.keys.length;
             for (int i = 0; i < n; i++) {
@@ -65,7 +67,7 @@ class AltBtreeCompoundIndex<T> extends AltBtree<T> implements Index<T> {
             return 0;  // allow to compare part of the compound key
         }
 
-        CompoundKey(Object[] keys) {
+        CompoundKey(Comparable<?>[] keys) {
             this.keys = keys;
         }
     }
@@ -82,11 +84,11 @@ class AltBtreeCompoundIndex<T> extends AltBtree<T> implements Index<T> {
             throw new StorageError(StorageError.INCOMPATIBLE_KEY_TYPE);
         }
         Object[] keyComponents = (Object[])key.oval;
-        if ((!prefix && keyComponents.length != types.length) || keyComponents.length > types.length) { 
+        if ((!prefix && keyComponents.length != types.length) || keyComponents.length > types.length) {
             throw new StorageError(StorageError.INCOMPATIBLE_KEY_TYPE);
         }
         boolean isCopy = false;
-        for (int i = 0; i < keyComponents.length; i++) { 
+        for (int i = 0; i < keyComponents.length; i++) {
             int type = types[i];
             if (type == ClassDescriptor.tpObject || type == ClassDescriptor.tpBoolean) { 
                 if (!isCopy) { 
@@ -98,10 +100,12 @@ class AltBtreeCompoundIndex<T> extends AltBtree<T> implements Index<T> {
                 keyComponents[i] = (type == ClassDescriptor.tpObject)
                     ? (Object)Integer.valueOf(keyComponents[i] == null ? 0 : getStorage().getOid(keyComponents[i]))
                     : (Object)Byte.valueOf((byte)(((Boolean)keyComponents[i]).booleanValue() ? 1 : 0));
-                
+
             }
         }
-        return new Key(new CompoundKey(keyComponents), key.inclusion != 0);
+        Comparable[] comps = new Comparable[keyComponents.length];
+        System.arraycopy(keyComponents, 0, comps, 0, keyComponents.length);
+        return new Key(new CompoundKey(comps), key.inclusion != 0);
     }
             
     public ArrayList<T> getList(Key from, Key till) {
