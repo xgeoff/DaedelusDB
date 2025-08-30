@@ -3662,12 +3662,20 @@ public class StorageImpl implements Storage {
         return obj;
     }
 
+    @SuppressWarnings("unchecked")
     final synchronized <T> T lookupObject(int oid, Class<? extends T> cls) {
-        Object obj = lookupObject(oid);
-        if (!cls.isInstance(obj)) {
-            throw new ClassCastException();
+        checkReadLock(oid);
+        Object obj = objectCache.get(oid);
+        if (obj == null || isRaw(obj)) {
+            obj = loadStub(oid, obj, cls);
         }
-        return cls.cast(obj);
+        if (cls != null) {
+            if (!cls.isInstance(obj)) {
+                throw new ClassCastException();
+            }
+            return cls.cast(obj);
+        }
+        return (T)obj;
     }
 
     /**
