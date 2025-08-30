@@ -192,11 +192,21 @@ class RndBtreeMultiFieldIndex<T> extends RndBtree<T> implements FieldIndex<T> {
     }
 
     public T[] get(Key from, Key till) {
-        ArrayList list = new ArrayList();
-        if (root != null) { 
+        ArrayList<T> list = new ArrayList<>();
+        if (root != null) {
             root.find(convertKey(from), convertKey(till), height, list);
         }
-        return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));
+        T[] array = newArray(list.size());
+        return list.toArray(array);
+    }
+
+    @SuppressWarnings("unchecked")
+    private T[] newArray(int size) {
+        Object array = Array.newInstance(cls, size);
+        if (array.getClass().getComponentType() != cls) {
+            throw new ArrayStoreException();
+        }
+        return (T[])array;
     }
 
     public T[] getPrefix(String prefix) {
