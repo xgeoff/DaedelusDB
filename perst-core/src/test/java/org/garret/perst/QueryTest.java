@@ -92,7 +92,9 @@ public class QueryTest {
     @Test
     public void test00() {
         try{
-            query.select((Class)null, (Iterator)null, (String)null);
+            Class cls = null;
+            Iterator<Stored> iter = null;
+            query.select(cls, iter, (String)null);
             fail();
         }catch(NullPointerException e){
             // expected exception
