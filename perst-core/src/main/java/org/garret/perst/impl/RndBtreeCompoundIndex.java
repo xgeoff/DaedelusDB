@@ -54,22 +54,22 @@ class RndBtreeCompoundIndex<T> extends RndBtree<T> implements Index<T> {
         return keyTypes;
     }
 
-    static class CompoundKey implements Comparable, IValue {
-        Object[] keys;
+    static class CompoundKey implements Comparable<CompoundKey>, IValue {
+        Comparable<?>[] keys;
 
-        public int compareTo(Object o) { 
-            CompoundKey c = (CompoundKey)o;
-            int n = keys.length < c.keys.length ? keys.length : c.keys.length; 
-            for (int i = 0; i < n; i++) { 
-                int diff = ((Comparable)keys[i]).compareTo(c.keys[i]);
-                if (diff != 0) { 
+        @SuppressWarnings("unchecked")
+        public int compareTo(CompoundKey c) {
+            int n = keys.length < c.keys.length ? keys.length : c.keys.length;
+            for (int i = 0; i < n; i++) {
+                int diff = ((Comparable<Object>)keys[i]).compareTo(c.keys[i]);
+                if (diff != 0) {
                     return diff;
                 }
             }
             return 0;  // allow to compare part of the compound key
         }
 
-        CompoundKey(Object[] keys) { 
+        CompoundKey(Comparable<?>[] keys) {
             this.keys = keys;
         }
     }
@@ -86,10 +86,12 @@ class RndBtreeCompoundIndex<T> extends RndBtree<T> implements Index<T> {
             throw new StorageError(StorageError.INCOMPATIBLE_KEY_TYPE);
         }
         Object[] keyComponents = (Object[])key.oval;
-        if ((!prefix && keyComponents.length != types.length) || keyComponents.length > types.length) { 
+        if ((!prefix && keyComponents.length != types.length) || keyComponents.length > types.length) {
             throw new StorageError(StorageError.INCOMPATIBLE_KEY_TYPE);
         }
-        return new Key(new CompoundKey(keyComponents), key.inclusion != 0);
+        Comparable[] comps = new Comparable[keyComponents.length];
+        System.arraycopy(keyComponents, 0, comps, 0, keyComponents.length);
+        return new Key(new CompoundKey(comps), key.inclusion != 0);
     }
             
     public ArrayList<T> getList(Key from, Key till) {
