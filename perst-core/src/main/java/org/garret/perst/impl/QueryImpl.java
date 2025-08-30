@@ -591,7 +591,7 @@ class CurrentNode extends Node {
         super(tpObj, opCurrent);
         this.cls = cls;
     }
-    Class cls;
+    Class<?> cls;
 }
 
 class DateLiteralNode extends LiteralNode { 

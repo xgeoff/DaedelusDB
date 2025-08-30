@@ -474,7 +474,7 @@ public class XMLImporter {
             throwException("ID is not specified or index");
         }
         if (className != null) { 
-            Class cls = ClassDescriptor.loadClass(storage, className); 
+            Class<?> cls = ClassDescriptor.loadClass(storage, className);
             if (fieldName != null) { 
                 if (indexType.equals("org.garret.perst.impl.BtreeCaseInsensitiveFieldIndex")) {
                     btree = new BtreeCaseInsensitiveFieldIndex(cls, fieldName, unique, autoinc);
@@ -561,7 +561,7 @@ public class XMLImporter {
 
     final void createObject(XMLElement elem) throws XMLImportException
     {
-        Class cls = ClassDescriptor.loadClass(storage, elem.name); 
+        Class<?> cls = ClassDescriptor.loadClass(storage, elem.name);
         ClassDescriptor desc = storage.getClassDescriptor(cls);
         int oid = mapId(getIntAttribute(elem, "id"));
         ByteBuffer buf = new ByteBuffer();
@@ -676,7 +676,7 @@ public class XMLImporter {
                 } else if (name.equals("ref")) { 
                     oid = mapId(getIntAttribute(value, "id"));
                 } else { 
-                    Class cls = ClassDescriptor.loadClass(storage, name); 
+                    Class<?> cls = ClassDescriptor.loadClass(storage, name);
                     ClassDescriptor desc = storage.getClassDescriptor(cls);
                     offs = buf.packI4(offs, -ClassDescriptor.tpValueTypeBias - desc.getOid());
                     if (desc.isCollection) { 

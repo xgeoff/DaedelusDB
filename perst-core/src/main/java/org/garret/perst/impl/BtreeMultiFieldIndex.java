@@ -30,7 +30,7 @@ class BtreeMultiFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
     String[] fieldName;
     int[]    types;
 
-    transient Class<T>   cls;
+    transient Class<? extends T>   cls;
     transient Field[] fld;
 
     BtreeMultiFieldIndex() {}
@@ -59,18 +59,26 @@ class BtreeMultiFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public Class<T> getIndexedClass() {
-        return cls;
+        return (Class<T>)cls;
     }
 
     public Field[] getKeyFields() { 
         return fld;
     }
 
-    @SuppressWarnings("unchecked")
     public void onLoad()
     {
-        cls = (Class<T>)ClassDescriptor.loadClass(getStorage(), className);
+        Class<?> loaded = ClassDescriptor.loadClass(getStorage(), className);
+        if (loaded != null) {
+            if (!Object.class.isAssignableFrom(loaded)) {
+                throw new StorageError(StorageError.CLASS_NOT_FOUND, loaded);
+            }
+            @SuppressWarnings("unchecked")
+            Class<? extends T> casted = (Class<? extends T>)loaded;
+            cls = casted;
+        }
         locateFields();
     }
 

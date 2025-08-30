@@ -82,7 +82,7 @@ public class Database implements IndexProvider {
         while (iterator.hasNext()) { 
             Map.Entry map = (Map.Entry)iterator.next();
             Table table = (Table)map.getValue();
-            Class cls = ClassDescriptor.loadClass(storage, (String)map.getKey());
+            Class<?> cls = ClassDescriptor.loadClass(storage, (String)map.getKey());
             table.setClass(cls);
             tables.put(cls, table);
             schemaUpdated |= addIndices(table, cls);

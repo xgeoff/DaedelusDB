@@ -2219,7 +2219,7 @@ public class StorageImpl implements Storage {
         return new RandomAccessBlobImpl(this);
     }
 
-    public <T extends TimeSeries.Tick> TimeSeries<T> createTimeSeries(Class blockClass, long maxBlockTimeInterval) {
+    public <T extends TimeSeries.Tick> TimeSeries<T> createTimeSeries(Class<? extends TimeSeries.Block> blockClass, long maxBlockTimeInterval) {
         return new TimeSeriesImpl<T>(this, blockClass, maxBlockTimeInterval);
     }
 
@@ -3989,7 +3989,11 @@ public class StorageImpl implements Storage {
                 return cls.cast(Bytes.unpackString(obj, encoding));
             case ClassDescriptor.tpClass:
                 obj.offs = offs;
-                return cls.cast(ClassDescriptor.loadClass(this, Bytes.unpackString(obj, encoding)));
+                Class<?> loadedClass = ClassDescriptor.loadClass(this, Bytes.unpackString(obj, encoding));
+                if (loadedClass == null || !cls.isInstance(loadedClass)) {
+                    throw new StorageError(StorageError.CLASS_NOT_FOUND, loadedClass);
+                }
+                return loadedClass;
             case ClassDescriptor.tpLink:
                 {
                     int len = Bytes.unpack4(body, offs);
