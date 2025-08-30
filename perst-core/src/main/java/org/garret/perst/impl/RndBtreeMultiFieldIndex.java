@@ -123,23 +123,24 @@ class RndBtreeMultiFieldIndex<T> extends RndBtree<T> implements FieldIndex<T> {
     }
 
     public boolean addAll(Collection<? extends T> c) {
-        MultiFieldValue[] arr = new MultiFieldValue[c.size()];
+        @SuppressWarnings("unchecked")
+        MultiFieldValue<T>[] arr = (MultiFieldValue<T>[]) new MultiFieldValue[c.size()];
         Iterator<? extends T> e = c.iterator();
-        try { 
+        try {
             for (int i = 0; e.hasNext(); i++) {
                 T obj = e.next();
                 Comparable[] values = new Comparable[fld.length];
-                for (int j = 0; j < values.length; j++) { 
+                for (int j = 0; j < values.length; j++) {
                     values[j] = (Comparable)fld[j].get(obj);
                 }
-                arr[i] = new MultiFieldValue(obj, values);
+                arr[i] = new MultiFieldValue<>(obj, values);
             }
-        } catch (Exception x) { 
+        } catch (Exception x) {
             throw new StorageError(StorageError.ACCESS_VIOLATION, x);
         }
         Arrays.sort(arr);
         for (int i = 0; i < arr.length; i++) {
-            add((T)arr[i].obj);
+            add(arr[i].obj);
         }
         return arr.length > 0;
     }
