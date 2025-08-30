@@ -27,7 +27,7 @@ public class DatabaseTest {
     @Before
     public void setUp() throws Exception {
         storage = StorageFactory.getInstance().createStorage();
-        storage.open(new NullFile(), Storage.INFINITE_PAGE_POOL);
+        storage.open("DatabaseTest.dbs", Storage.INFINITE_PAGE_POOL);
         database = new Database(storage);
     }
 
@@ -35,6 +35,9 @@ public class DatabaseTest {
     public void tearDown() throws Exception {
         if(storage.isOpened())
             storage.close();
+        try {
+            new java.io.File("DatabaseTest.dbs").delete();
+        } catch (Exception ignore) {}
     }
     /**
      * <B>Goal:</B> To verify the functionality of the <CODE>createTable(...)</CODE> method.

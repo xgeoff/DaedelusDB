@@ -44,7 +44,7 @@ public class QueryTest {
     @Before
     public void setUp() throws Exception {
         storage = StorageFactory.getInstance().createStorage();
-        storage.open(new NullFile(), Storage.INFINITE_PAGE_POOL);
+        storage.open("QueryTest.dbs", Storage.INFINITE_PAGE_POOL);
         query = storage.createQuery();
     }
 
@@ -52,6 +52,9 @@ public class QueryTest {
     public void tearDown() throws Exception {
         if (storage.isOpened())
             storage.close();
+        try {
+            new java.io.File("QueryTest.dbs").delete();
+        } catch (Exception ignore) {}
     }
     /**
      * Checks that iterator contains all objects in the <code>objects</code> array.

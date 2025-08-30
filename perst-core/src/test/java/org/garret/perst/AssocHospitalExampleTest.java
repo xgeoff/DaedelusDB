@@ -10,7 +10,7 @@ public class AssocHospitalExampleTest {
     @Test
     public void hospitalQueriesAndUpdate() {
         Storage storage = StorageFactory.getInstance().createStorage();
-        storage.open(new NullFile(), Storage.INFINITE_PAGE_POOL);
+        storage.open("AssocHospitalExampleTest.dbs", Storage.INFINITE_PAGE_POOL);
         AssocDB db = new AssocDB(storage);
         try {
             // Populate database
@@ -103,6 +103,9 @@ public class AssocHospitalExampleTest {
             check.commit();
         } finally {
             storage.close();
+            try {
+                new java.io.File("AssocHospitalExampleTest.dbs").delete();
+            } catch (Exception ignore) {}
         }
     }
 }

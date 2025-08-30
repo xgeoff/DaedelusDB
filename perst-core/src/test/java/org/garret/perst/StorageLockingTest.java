@@ -25,7 +25,7 @@ public class StorageLockingTest {
     @Before
     public void setUp() {
         storage = (StorageImpl) StorageFactory.getInstance().createStorage();
-        storage.open(new NullFile(), INFINITE_PAGE_POOL);
+        storage.open("StorageLockingTest.dbs", INFINITE_PAGE_POOL);
         storage.setRoot(new Root());
         storage.commit();
     }
@@ -34,6 +34,9 @@ public class StorageLockingTest {
     public void tearDown() {
         if (storage != null && storage.isOpened()) {
             storage.close();
+            try {
+                new java.io.File("StorageLockingTest.dbs").delete();
+            } catch (Exception ignore) {}
         }
     }
 
