@@ -12,14 +12,17 @@ public class ReflectionMultidimensionalComparator<T> extends MultidimensionalCom
     private String[] fieldNames;
     private boolean  treateZeroAsUndefinedValue;
 
-    transient private Class cls;
+    transient private Class<?> cls;
     transient private Field[] fields;
     transient private ClassDescriptor desc;
 
     public void onLoad()
     {
-        cls = ClassDescriptor.loadClass(getStorage(), className);
-        locateFields();
+        Class<?> loaded = ClassDescriptor.loadClass(getStorage(), className);
+        if (loaded != null) {
+            cls = loaded;
+            locateFields();
+        }
     }
 
     private final void locateFields() 

@@ -684,7 +684,7 @@ public interface Storage {
      * value of maxBlockTimeInterval can be set as 100*(24*60*60*1000)*2
      * @return new empty time series
      */
-    public <T extends TimeSeries.Tick> TimeSeries<T> createTimeSeries(Class blockClass, long maxBlockTimeInterval);
+    public <T extends TimeSeries.Tick> TimeSeries<T> createTimeSeries(Class<? extends TimeSeries.Block> blockClass, long maxBlockTimeInterval);
    
     /**
      * Create PATRICIA trie (Practical Algorithm To Retrieve Information Coded In Alphanumeric)

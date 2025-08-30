@@ -9,7 +9,7 @@ class AltBtreeMultiFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
     String   className;
     String[] fieldName;
 
-    transient Class<T>   cls;
+    transient Class<? extends T>   cls;
     transient Field[] fld;
 
     AltBtreeMultiFieldIndex() {}
@@ -34,18 +34,26 @@ class AltBtreeMultiFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public Class<T> getIndexedClass() {
-        return cls;
+        return (Class<T>)cls;
     }
 
     public Field[] getKeyFields() { 
         return fld;
     }
 
-    @SuppressWarnings("unchecked")
     public void onLoad()
     {
-        cls = (Class<T>)ClassDescriptor.loadClass(getStorage(), className);
+        Class<?> loaded = ClassDescriptor.loadClass(getStorage(), className);
+        if (loaded != null) {
+            if (!Object.class.isAssignableFrom(loaded)) {
+                throw new StorageError(StorageError.CLASS_NOT_FOUND, loaded);
+            }
+            @SuppressWarnings("unchecked")
+            Class<? extends T> casted = (Class<? extends T>)loaded;
+            cls = casted;
+        }
         locateFields();
     }
 

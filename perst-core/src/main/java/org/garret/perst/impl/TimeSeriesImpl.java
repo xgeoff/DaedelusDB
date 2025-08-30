@@ -345,7 +345,7 @@ public class TimeSeriesImpl<T extends TimeSeries.Tick> extends PersistentCollect
         block.modify();
     }
 
-    TimeSeriesImpl(Storage storage, Class blockClass, long maxBlockTimeInterval) {
+    TimeSeriesImpl(Storage storage, Class<? extends Block> blockClass, long maxBlockTimeInterval) {
         this.blockClass = blockClass;
         this.maxBlockTimeInterval = maxBlockTimeInterval;
         blockClassName = ClassDescriptor.getClassName(blockClass);
@@ -355,7 +355,12 @@ public class TimeSeriesImpl<T extends TimeSeries.Tick> extends PersistentCollect
     TimeSeriesImpl() {}
    
     public void onLoad() {
-        blockClass = ClassDescriptor.loadClass(getStorage(), blockClassName);
+        Class<?> loaded = ClassDescriptor.loadClass(getStorage(), blockClassName);
+        if (loaded != null && Block.class.isAssignableFrom(loaded)) {
+            blockClass = loaded.asSubclass(Block.class);
+        } else if (loaded != null) {
+            throw new StorageError(StorageError.CLASS_NOT_FOUND, loaded);
+        }
     }
 
     public void deallocateMembers() {
@@ -381,6 +386,6 @@ public class TimeSeriesImpl<T extends TimeSeries.Tick> extends PersistentCollect
     private Index index;
     private long  maxBlockTimeInterval;
     private String blockClassName;
-    private transient Class blockClass;
+    private transient Class<? extends Block> blockClass;
 }
 
