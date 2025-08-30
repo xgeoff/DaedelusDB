@@ -2,7 +2,9 @@ package org.garret.perst.impl;
 import  org.garret.perst.*;
 
 import java.lang.reflect.*;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.function.IntFunction;
 
 class AltBtreeFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> { 
     String className;
@@ -10,8 +12,19 @@ class AltBtreeFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
     long   autoincCount;
     transient Class<T> cls;
     transient Field fld;
+    transient IntFunction<T[]> arrayConstructor;
 
     AltBtreeFieldIndex() {}
+
+    private void initArrayConstructor() {
+        arrayConstructor = size -> {
+            try {
+                return (T[])MethodHandles.arrayConstructor(Array.newInstance(cls, 0).getClass()).invoke(size);
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
     
     private final void locateField() 
     {
@@ -34,6 +47,7 @@ class AltBtreeFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
     {
         cls = (Class<T>)ClassDescriptor.loadClass(getStorage(), className);
         locateField();
+        initArrayConstructor();
     }
 
     AltBtreeFieldIndex(Class<T> cls, String fieldName, boolean unique) {
@@ -43,6 +57,7 @@ class AltBtreeFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
         this.className = ClassDescriptor.getClassName(cls);
         locateField();
         type = checkType(fld.getType());
+        initArrayConstructor();
     }
 
     protected Key extractKey(Object obj) { 
@@ -137,7 +152,7 @@ class AltBtreeFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
         }
         Arrays.sort(arr);
         for (int i = 0; i < arr.length; i++) {
-            add((T)arr[i].obj);
+            add(cls.cast(arr[i].obj));
         }
         return arr.length > 0;
     }
@@ -208,12 +223,12 @@ class AltBtreeFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
 
     public T[] getPrefix(String prefix) {
         ArrayList<T> list = getList(new Key(prefix, true), new Key(prefix + Character.MAX_VALUE, false));
-        return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));
+        return list.toArray(arrayConstructor.apply(list.size()));
     }
 
     public T[] prefixSearch(String key) {
         ArrayList<T> list = prefixSearchList(key);
-        return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));
+        return list.toArray(arrayConstructor.apply(list.size()));
     }
 
     public T[] get(Key from, Key till) {
@@ -221,11 +236,11 @@ class AltBtreeFieldIndex<T> extends AltBtree<T> implements FieldIndex<T> {
         if (root != null) {
             root.find(checkKey(from), checkKey(till), height, list);
         }
-        return (T[])list.toArray((T[])Array.newInstance(cls, list.size()));
+        return list.toArray(arrayConstructor.apply(list.size()));
     }
 
     public T[] toArray() {
-        T[] arr = (T[])Array.newInstance(cls, nElems);
+        T[] arr = arrayConstructor.apply(nElems);
         if (root != null) {
             root.traverseForward(height, arr, 0);
         }
