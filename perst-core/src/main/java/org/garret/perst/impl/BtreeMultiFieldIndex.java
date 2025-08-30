@@ -5,21 +5,21 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.ArrayList;
 
-class MultiFieldValue implements Comparable<MultiFieldValue> { 
+class MultiFieldValue<T> implements Comparable<MultiFieldValue<T>> {
     Comparable[] values;
-    Object       obj;
-    
-    public int compareTo(MultiFieldValue f) { 
+    T            obj;
+
+    public int compareTo(MultiFieldValue<T> f) {
         for (int i = 0; i < values.length; i++) {
             int diff = values[i].compareTo(f.values[i]);
-            if (diff != 0) { 
+            if (diff != 0) {
                 return diff;
             }
         }
         return 0;
     }
-    
-    MultiFieldValue(Object obj, Comparable[] values) { 
+
+    MultiFieldValue(T obj, Comparable[] values) {
         this.obj = obj;
         this.values = values;
     }
@@ -512,23 +512,24 @@ class BtreeMultiFieldIndex<T> extends Btree<T> implements FieldIndex<T> {
     }
 
     public boolean addAll(Collection<? extends T> c) {
-        MultiFieldValue[] arr = new MultiFieldValue[c.size()];
+        @SuppressWarnings("unchecked")
+        MultiFieldValue<T>[] arr = (MultiFieldValue<T>[]) new MultiFieldValue[c.size()];
         Iterator<? extends T> e = c.iterator();
-        try { 
+        try {
             for (int i = 0; e.hasNext(); i++) {
                 T obj = e.next();
                 Comparable[] values = new Comparable[fld.length];
-                for (int j = 0; j < values.length; j++) { 
+                for (int j = 0; j < values.length; j++) {
                     values[j] = (Comparable)fld[j].get(obj);
                 }
-                arr[i] = new MultiFieldValue(obj, values);
+                arr[i] = new MultiFieldValue<>(obj, values);
             }
-        } catch (Exception x) { 
+        } catch (Exception x) {
             throw new StorageError(StorageError.ACCESS_VIOLATION, x);
         }
         Arrays.sort(arr);
         for (int i = 0; i < arr.length; i++) {
-            add((T)arr[i].obj);
+            add(arr[i].obj);
         }
         return arr.length > 0;
     }
