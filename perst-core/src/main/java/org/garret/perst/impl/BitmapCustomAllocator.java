@@ -56,7 +56,7 @@ public class BitmapCustomAllocator extends Persistent implements CustomAllocator
     {
         long used = 0;
         for (int i = 0, n = pages.size(); i < n; i++) {
-            BitmapPage pg = (BitmapPage)pages.get(i);
+            BitmapPage pg = pages.get(i);
             byte[] bitmap = pg.data;
             for (int j = 0; j < BITMAP_PAGE_SIZE; j++) {
                 int mask = bitmap[j] & 0xFF;
@@ -83,7 +83,7 @@ public class BitmapCustomAllocator extends Persistent implements CustomAllocator
 
         while (true) { 
             for (int i = firstPage; i < lastPage; i++) {
-                BitmapPage pg = (BitmapPage)pages.get(i);
+                BitmapPage pg = pages.get(i);
                 while (offs < BITMAP_PAGE_SIZE) { 
                     int mask = pg.data[offs] & 0xFF; 
                     if (holeBitSize + BitmapAllocator.firstHoleSize[mask] >= objBitSize) { 
@@ -92,7 +92,7 @@ public class BitmapCustomAllocator extends Persistent implements CustomAllocator
                         if (nextPos != 0) {
                             long quantNo = ((nextPos - base) >>> quantumBits);
                             i = (int)(quantNo / BITMAP_PAGE_BITS);
-                            pg = (BitmapPage)pages.get(i);
+                            pg = pages.get(i);
                             offs = (int)(quantNo + 7 - (long)i*BITMAP_PAGE_BITS) >> 3;
                             holeBitSize = 0;
                             continue;
@@ -105,13 +105,13 @@ public class BitmapCustomAllocator extends Persistent implements CustomAllocator
                             if (holeBitSize > offs*8) { 
                                 memset(pg, 0, 0xFF, offs);
                                 holeBitSize -= offs*8;
-                                pg = (BitmapPage)pages.get(--i);
+                                pg = pages.get(--i);
                                 offs = BITMAP_PAGE_SIZE;
                             }
                             while (holeBitSize > BITMAP_PAGE_BITS) { 
                                 memset(pg, 0, 0xFF, BITMAP_PAGE_SIZE);
                                 holeBitSize -= BITMAP_PAGE_BITS;
-                                pg = (BitmapPage)pages.get(--i);
+                                pg = pages.get(--i);
                             }
                             while ((holeBitSize -= 8) > 0) { 
                                 pg.data[--offs] = (byte)0xFF; 
@@ -127,7 +127,7 @@ public class BitmapCustomAllocator extends Persistent implements CustomAllocator
                         if (nextPos != 0) {
                             long quantNo = ((nextPos - base) >>> quantumBits);
                             i = (int)(quantNo / BITMAP_PAGE_BITS);
-                            pg = (BitmapPage)pages.get(i);
+                            pg = pages.get(i);
                             offs = (int)(quantNo + 7 - (long)i*BITMAP_PAGE_BITS) >> 3;
                             holeBitSize = 0;
                             continue;
@@ -187,24 +187,23 @@ public class BitmapCustomAllocator extends Persistent implements CustomAllocator
     }
 
 
-    static class Location implements Comparable { 
+    static class Location implements Comparable<Location> {
         long pos;
         long size;
-        
-        Location(long pos, long size) { 
+
+        Location(long pos, long size) {
             this.pos = pos;
             this.size = size;
         }
 
-        public int compareTo(Object o) { 
-            Location loc = (Location)o;
+        public int compareTo(Location loc) {
             return pos + size <= loc.pos ? -1 : loc.pos + loc.size <= pos ? 1 : 0;
         }
     }
 
-    private long wasReserved(long pos, long size) { 
+    private long wasReserved(long pos, long size) {
         Location loc = new Location(pos, size);
-        Location r = (Location)reserved.get(loc);
+        Location r = reserved.get(loc);
         if (r != null) { 
             return r.pos + r.size;
         }
@@ -223,7 +222,7 @@ public class BitmapCustomAllocator extends Persistent implements CustomAllocator
         long objBitSize = (size+quantum-1) >>> quantumBits;
         int  pageId = (int)(quantNo / BITMAP_PAGE_BITS);
         int  offs = (int)(quantNo - (long)pageId*BITMAP_PAGE_BITS) >> 3;
-        BitmapPage pg = (BitmapPage)pages.get(pageId);
+        BitmapPage pg = pages.get(pageId);
         int  bitOffs = (int)quantNo & 7;
 
         if (objBitSize > 8 - bitOffs) { 
@@ -231,7 +230,7 @@ public class BitmapCustomAllocator extends Persistent implements CustomAllocator
             pg.data[offs++] &= (1 << bitOffs) - 1;
             while (objBitSize + offs*8 > BITMAP_PAGE_BITS) { 
                 memset(pg, offs, 0, BITMAP_PAGE_SIZE - offs);
-                pg = (BitmapPage)pages.get(++pageId);
+                pg = pages.get(++pageId);
                 objBitSize -= (BITMAP_PAGE_SIZE - offs)*8;
                 offs = 0;
             }
