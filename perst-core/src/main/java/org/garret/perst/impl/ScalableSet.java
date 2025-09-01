@@ -67,27 +67,28 @@ class ScalableSet<T> extends PersistentCollection<T> implements IPersistentSet<T
         return r;
     }
 
-    public boolean add(T obj) { 
+    @SuppressWarnings("unchecked")
+    public boolean add(T obj) {
         if (link != null) {
             int i = binarySearch(obj);
             int n = link.size();
-            if (i < n && link.getRaw(i).equals(obj)) { 
+            if (i < n && link.getRaw(i).equals(obj)) {
                 return false;
             }
-            if (n == BTREE_THRESHOLD) { 
+            if (n == BTREE_THRESHOLD) {
                 set = getStorage().<T>createSet();
-                for (i = 0; i < n; i++) { 
-                    ((IPersistentSet)set).add(link.getRaw(i));
+                for (i = 0; i < n; i++) {
+                    ((IPersistentSet<T>) set).add((T) link.getRaw(i));
                 }
                 link = null;
                 modify();
                 set.add(obj);
-            } else { 
+            } else {
                 modify();
                 link.insert(i, obj);
             }
             return true;
-        } else { 
+        } else {
             return set.add(obj);
         }
     }
