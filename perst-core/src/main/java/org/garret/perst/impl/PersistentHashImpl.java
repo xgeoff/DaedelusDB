@@ -484,29 +484,28 @@ class PersistentHashImpl<K, V> extends PersistentResource implements IPersistent
                     return false;
                 }
                 
-		public boolean contains(Object k) {
-                    Entry<K,V> e = (Entry<K,V>)k;
-                    if (e.getValue() != null) { 
+                public boolean contains(Map.Entry<? extends K, ? extends V> e) {
+                    if (e.getValue() != null) {
                         return e.getValue().equals(PersistentHashImpl.this.get(e.getKey()));
                     } else {
-                        return PersistentHashImpl.this.containsKey(e.getKey()) 
+                        return PersistentHashImpl.this.containsKey(e.getKey())
                             && PersistentHashImpl.this.get(e.getKey()) == null;
                     }
-		}
-	    };
-	}
-	return entrySet;
-    }   
+                }
+            };
+        }
+        return entrySet;
+    }
 
      
     public boolean equals(Object o) {
 	if (o == this) {
 	    return true;
         }
-	if (!(o instanceof Map)) {
-	    return false;
+        if (!(o instanceof Map)) {
+            return false;
         }
-	Map<K,V> t = (Map<K,V>) o;
+        Map<? extends K, ? extends V> t = (Map<? extends K, ? extends V>) o;
 	if (t.size() != size()) {
 	    return false;
         }
