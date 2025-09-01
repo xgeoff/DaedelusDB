@@ -6,8 +6,8 @@ import java.util.*;
 import java.util.ArrayList;
 
 class MultiFieldValue<T> implements Comparable<MultiFieldValue<T>> {
-    Comparable[] values;
-    T            obj;
+    Comparable<Object>[] values;
+    T                    obj;
 
     public int compareTo(MultiFieldValue<T> f) {
         for (int i = 0; i < values.length; i++) {
@@ -19,9 +19,10 @@ class MultiFieldValue<T> implements Comparable<MultiFieldValue<T>> {
         return 0;
     }
 
+    @SuppressWarnings("unchecked")
     MultiFieldValue(T obj, Comparable[] values) {
         this.obj = obj;
-        this.values = values;
+        this.values = (Comparable<Object>[]) values;
     }
 }
  
