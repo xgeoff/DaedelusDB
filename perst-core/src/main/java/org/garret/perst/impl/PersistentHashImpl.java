@@ -4,38 +4,40 @@ import  java.util.*;
 
 class PersistentHashImpl<K, V> extends PersistentResource implements IPersistentHash<K, V>
 {
-    static class HashPage extends Persistent 
+    interface HashElem<K,V> {}
+
+    static class HashPage<K,V> extends Persistent implements HashElem<K,V>
     {
-        Link items;
-    
-        HashPage(Storage db, int pageSize) 
-        { 
+        Link<HashElem<K,V>> items;
+
+        HashPage(Storage db, int pageSize)
+        {
             super(db);
-            items = db.createLink(pageSize);
+            items = db.<HashElem<K,V>>createLink(pageSize);
             items.setSize(pageSize);
         }
-        
+
         HashPage() {}
-        
+
         public void deallocate()
         {
-            for (Object child : items) {
+            for (HashElem<K,V> child : items) {
                 if (child instanceof HashPage) {
-                    ((HashPage)child).deallocate();
+                    ((HashPage<K,V>)child).deallocate();
                 } else {
-                    CollisionItem next;
-                    for (CollisionItem item = (CollisionItem)child; item != null; item = next) {
+                    CollisionItem<K,V> next;
+                    for (CollisionItem<K,V> item = (CollisionItem<K,V>)child; item != null; item = next) {
                         next = item.next;
                         item.deallocate();
                     }
                 }
             }
             super.deallocate();
-        }        
+        }
     }
 
-    static class CollisionItem<K,V> extends Persistent implements Entry<K,V>
-    { 
+    static class CollisionItem<K,V> extends Persistent implements Entry<K,V>, HashElem<K,V>
+    {
         K                  key;
         V                  obj;
         int                hashCode;
@@ -66,7 +68,7 @@ class PersistentHashImpl<K, V> extends PersistentResource implements IPersistent
         CollisionItem() {}
     }    
              
-    HashPage root;
+    HashPage<K,V> root;
     int      nElems;
     int      loadFactor;
     int      pageSize;
@@ -124,15 +126,15 @@ class PersistentHashImpl<K, V> extends PersistentResource implements IPersistent
 
     public Entry<K,V> getEntry(Object key) 
     {
-        HashPage pg = root; 
+        HashPage<K,V> pg = root;
         if (pg != null) {
             int divisor = 1;
             int hashCode = key.hashCode();
             while (true) {
                 int h = (int)((hashCode & UINT_MASK) / divisor % pageSize);
-                Object child = pg.items.get(h);
+                HashElem<K,V> child = pg.items.get(h);
                 if (child instanceof HashPage) {
-                    pg = (HashPage)child; 
+                    pg = (HashPage<K,V>)child;
                     divisor *= pageSize;
                 } else {
                     for (CollisionItem<K,V> item = (CollisionItem<K,V>)child; item != null; item = item.next) {
@@ -150,9 +152,9 @@ class PersistentHashImpl<K, V> extends PersistentResource implements IPersistent
     public V put(K key, V value) 
     {
         int hashCode = key.hashCode();
-        HashPage pg = root;
+        HashPage<K,V> pg = root;
         if (pg == null) {
-            pg = new HashPage(getStorage(), pageSize);
+            pg = new HashPage<K,V>(getStorage(), pageSize);
             int h = (int)((hashCode & UINT_MASK) % pageSize);
             pg.items.set(h, new CollisionItem<K,V>(key, value, hashCode));
             root = pg;
@@ -164,9 +166,9 @@ class PersistentHashImpl<K, V> extends PersistentResource implements IPersistent
             while (true)
             {
                 int h = (int)((hashCode & UINT_MASK) / divisor % pageSize);
-                Object child = pg.items.get(h);
+                HashElem<K,V> child = pg.items.get(h);
                 if (child instanceof HashPage) {
-                    pg = (HashPage)child;
+                    pg = (HashPage<K,V>)child;
                     divisor *= pageSize;                        
                 } else { 
                     CollisionItem<K,V> prev = null;
@@ -193,7 +195,7 @@ class PersistentHashImpl<K, V> extends PersistentResource implements IPersistent
                         collisionChainLength += 1;
                     }
                     if (collisionChainLength > loadFactor) {
-                        HashPage newPage = new HashPage(getStorage(), pageSize);
+                        HashPage<K,V> newPage = new HashPage<K,V>(getStorage(), pageSize);
                         divisor *= pageSize;
                         CollisionItem<K,V> next;
                         for (CollisionItem<K,V> item = (CollisionItem<K,V>)child; item != null; item = next) {
@@ -230,15 +232,15 @@ class PersistentHashImpl<K, V> extends PersistentResource implements IPersistent
 
     public V remove(Object key) 
     {
-        HashPage pg = root; 
+        HashPage<K,V> pg = root;
         if (pg != null) {
             int divisor = 1;
             int hashCode = key.hashCode();
             while (true) {
                 int h = (int)((hashCode & UINT_MASK) / divisor % pageSize);
-                Object child = pg.items.get(h);
+                HashElem<K,V> child = pg.items.get(h);
                 if (child instanceof HashPage) {
-                    pg = (HashPage)child; 
+                    pg = (HashPage<K,V>)child;
                     divisor *= pageSize;
                 } else {
                     CollisionItem<K,V> prev = null;
@@ -353,12 +355,12 @@ class PersistentHashImpl<K, V> extends PersistentResource implements IPersistent
         return new EntryIterator();
     }
 
-    static class StackElem
+    class StackElem
     {
-        HashPage page;
+        HashPage<K,V> page;
         int      pos;
 
-        StackElem(HashPage page, int pos) {
+        StackElem(HashPage<K,V> page, int pos) {
             this.page = page;
             this.pos = pos;
         }
@@ -371,7 +373,7 @@ class PersistentHashImpl<K, V> extends PersistentResource implements IPersistent
 
         EntryIterator() 
         {
-            HashPage pg = root;
+            HashPage<K,V> pg = root;
             
             if (pg != null) {
                 int start = 0;
@@ -379,11 +381,11 @@ class PersistentHashImpl<K, V> extends PersistentResource implements IPersistent
               DepthFirst:
                 while (true) { 
                     for (int i = start, n = pg.items.size(); i < n; i++) { 
-                        Object child = pg.items.get(i);
+                        HashElem<K,V> child = pg.items.get(i);
                         if (child != null) {
                             stack.push(new StackElem(pg, i));
                             if (child instanceof HashPage) {
-                                pg = (HashPage)child;
+                                pg = (HashPage<K,V>)child;
                                 start = 0;
                                 continue DepthFirst;
                             } else {
@@ -415,17 +417,17 @@ class PersistentHashImpl<K, V> extends PersistentResource implements IPersistent
             if ((nextItem = nextItem.next) == null) {
                 do {
                     StackElem top = stack.pop();
-                    HashPage pg = top.page;
+                    HashPage<K,V> pg = top.page;
                     int start = top.pos + 1;                           
                     
                   DepthFirst:
                     while (true) {
                         for (int i = start, n = pg.items.size(); i < n; i++) { 
-                            Object child = pg.items.get(i);
+                            HashElem<K,V> child = pg.items.get(i);
                             if (child != null) {
                                 stack.push(new StackElem(pg, i));
                                 if (child instanceof HashPage) {
-                                    pg = (HashPage)child;
+                                    pg = (HashPage<K,V>)child;
                                     start = 0;
                                     continue DepthFirst;
                                 } else {
@@ -464,10 +466,10 @@ class PersistentHashImpl<K, V> extends PersistentResource implements IPersistent
                     if (!(o instanceof Map.Entry)) {
                         return false;
                     }
-                    Entry<K,V> entry = (Entry<K,V>) o;
-                    K key = entry.getKey();
-                    V value = entry.getValue();
-                    if (value != null) { 
+                    Map.Entry<?,?> entry = (Map.Entry<?,?>) o;
+                    Object key = entry.getKey();
+                    Object value = entry.getValue();
+                    if (value != null) {
                         V v = PersistentHashImpl.this.get(key);
                         if (value.equals(v)) {
                             PersistentHashImpl.this.remove(key);
@@ -505,23 +507,24 @@ class PersistentHashImpl<K, V> extends PersistentResource implements IPersistent
         if (!(o instanceof Map)) {
             return false;
         }
-        Map<? extends K, ? extends V> t = (Map<? extends K, ? extends V>) o;
-	if (t.size() != size()) {
-	    return false;
+        Map<?,?> t = (Map<?,?>) o;
+        if (t.size() != size()) {
+            return false;
         }
 
         try {
             Iterator<Entry<K,V>> i = entrySet().iterator();
             while (i.hasNext()) {
                 Entry<K,V> e = i.next();
-		K key = e.getKey();
-                V value = e.getValue();
+                Object key = e.getKey();
+                Object value = e.getValue();
+                Object tv = t.get(key);
                 if (value == null) {
-                    if (!(t.get(key)==null && t.containsKey(key))) {
+                    if (!(tv == null && t.containsKey(key))) {
                         return false;
                     }
                 } else {
-                    if (!value.equals(t.get(key))) {
+                    if (!value.equals(tv)) {
                         return false;
                     }
                 }
