@@ -8,12 +8,12 @@ public class BitmapCustomAllocator extends Persistent implements CustomAllocator
     protected int  quantumBits;
     protected long base;
     protected long limit;
-    protected Link pages;
+    protected Link<BitmapPage> pages;
     protected int  extensionPages;
 
     transient int  currPage;
     transient int  currOffs;
-    transient TreeMap reserved = new TreeMap();
+    transient TreeMap<Location, Location> reserved = new TreeMap<Location, Location>();
 
     static final int BITMAP_PAGE_SIZE = Page.pageSize - ObjectHeader.sizeof - 4;
     static final int BITMAP_PAGE_BITS = BITMAP_PAGE_SIZE*8;
@@ -34,7 +34,7 @@ public class BitmapCustomAllocator extends Persistent implements CustomAllocator
         quantumBits = bits;
         Assert.that((1 << bits) == quantum);
         extensionPages = (int)((extension + ((long)BITMAP_PAGE_BITS << quantumBits) - 1) / ((long)BITMAP_PAGE_BITS << quantumBits));
-        pages = storage.createLink();
+        pages = storage.<BitmapPage>createLink();
     }
     
     protected BitmapCustomAllocator() {}
