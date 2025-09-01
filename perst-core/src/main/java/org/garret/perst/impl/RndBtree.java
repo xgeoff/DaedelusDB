@@ -78,7 +78,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
             }
         }            
 
-        boolean find(Key firstKey, Key lastKey, int height, ArrayList result)
+        <T> boolean find(Key firstKey, Key lastKey, int height, ArrayList<T> result)
         {
             int l = 0, n = nItems, r = n;
             height -= 1;
@@ -99,7 +99,9 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
                         if (-compare(lastKey, l) >= lastKey.inclusion) {
                             return false;
                         }
-                        result.add(items.get(l));
+                        @SuppressWarnings("unchecked")
+                        T item = (T)items.get(l);
+                        result.add(item);
                         l += 1;
                     }
                     return true;
@@ -114,13 +116,15 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
                     } while (compare(lastKey, l++) >= 0);
                     return false;
                 }
-            } 
-            if (height == 0) { 
-                while (l < n) { 
-                    result.add(items.get(l));
+            }
+            if (height == 0) {
+                while (l < n) {
+                    @SuppressWarnings("unchecked")
+                    T item = (T)items.get(l);
+                    result.add(item);
                     l += 1;
                 }
-            } else { 
+            } else {
                 do {
                     if (!((BtreePage)items.get(l)).find(firstKey, lastKey, height, result)) {
                         return false;
@@ -793,40 +797,42 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
             }
         }
 
-        boolean prefixSearch(String key, int height, ArrayList result)
+        <T> boolean prefixSearch(String key, int height, ArrayList<T> result)
         {
             int l = 0, n = nItems, r = n;
             height -= 1;
             while (l < r)  {
                 int i = (l+r) >> 1;
                 if (!key.startsWith(data[i]) && key.compareTo(data[i]) > 0) {
-                    l = i + 1; 
-                } else { 
+                    l = i + 1;
+                } else {
                     r = i;
                 }
             }
-            Assert.that(r == l); 
-            if (height == 0) { 
-                while (l < n) { 
-                    if (key.compareTo(data[l]) < 0) { 
+            Assert.that(r == l);
+            if (height == 0) {
+                while (l < n) {
+                    if (key.compareTo(data[l]) < 0) {
                         return false;
                     }
-                    result.add(items.get(l));
+                    @SuppressWarnings("unchecked")
+                    T item = (T)items.get(l);
+                    result.add(item);
                     l += 1;
                 }
-            } else { 
+            } else {
                 do {
                     if (!((BtreePageOfString)items.get(l)).prefixSearch(key, height, result)) {
                         return false;
                     }
-                    if (l == n) { 
+                    if (l == n) {
                         return true;
                     }
                 } while (key.compareTo(data[l++]) >= 0);
                 return false;
             }
             return true;
-        }    
+        }
 
 
         BtreePageOfString(Storage s) {
@@ -863,7 +869,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
 
         int compare(Key key, int i) {
-            return ((Comparable<Object>)key.oval).compareTo(data[i]);
+            return ((Comparable<? super Object>)key.oval).compareTo(data[i]);
         }
 
         void insert(BtreeKey key, int i) { 
@@ -950,8 +956,8 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
     }
 
-    Key checkKey(Key key) { 
-        if (key != null) { 
+    Key checkKey(Key key) {
+        if (key != null) {
             if (key.type != type) { 
                 throw new StorageError(StorageError.INCOMPATIBLE_KEY_TYPE);
             }
@@ -964,19 +970,24 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
             }
         }
         return key;
-    }    
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <E> E cast(Object obj) {
+        return (E) obj;
+    }
 
     public T get(Key key) { 
         key = checkKey(key);
-        if (root != null) { 
-            ArrayList list = new ArrayList();
+        if (root != null) {
+            ArrayList<T> list = new ArrayList<T>();
             root.find(key, key, height, list);
-            if (list.size() > 1) { 
+            if (list.size() > 1) {
                 throw new StorageError(StorageError.KEY_NOT_UNIQUE);
-            } else if (list.size() == 0) { 
+            } else if (list.isEmpty()) {
                 return null;
-            } else { 
-                return (T)list.get(0);
+            } else {
+                return list.get(0);
             }
         }
         return null;
@@ -1084,12 +1095,12 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
             height = 1;
         } else { 
             int result = root.insert(ins, height, unique, overwrite);
-            if (result == op_overflow) { 
-                allocateRootPage(ins, height);
-                height += 1;
-            } else if (result == op_duplicate || result == op_overwrite) { 
-                return (T)ins.oldNode;
-            }
+              if (result == op_overflow) {
+                  allocateRootPage(ins, height);
+                  height += 1;
+              } else if (result == op_duplicate || result == op_overwrite) {
+                  return cast(ins.oldNode);
+              }
         }
         updateCounter += 1;
         nElems += 1;
@@ -1150,7 +1161,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
         BtreeKey rk = new BtreeKey(checkKey(key), null);
         remove(rk);
-        return (T)rk.oldNode;
+        return cast(rk.oldNode);
     }
         
         
@@ -1210,13 +1221,15 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
     }
 
     public <E> E[] toArray(E[] arr) {
-        if (arr.length < nElems) { 
-            arr = (E[])Array.newInstance(arr.getClass().getComponentType(), nElems);
+        Object[] tmp = toArray();
+        if (arr.length < nElems) {
+            @SuppressWarnings("unchecked")
+            E[] newArr = (E[]) Array.newInstance(arr.getClass().getComponentType(), nElems);
+            System.arraycopy(tmp, 0, newArr, 0, nElems);
+            return newArr;
         }
-        if (root != null) { 
-            root.traverseForward(height, arr, 0);
-        }
-        if (arr.length > nElems) { 
+        System.arraycopy(tmp, 0, arr, 0, nElems);
+        if (arr.length > nElems) {
             arr[nElems] = null;
         }
         return arr;
@@ -1235,7 +1248,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
         }
 
         public T getValue() {
-            return (T)pg.items.get(pos);
+            return RndBtree.cast(pg.items.get(pos));
         }
 
         public T setValue(T value) { 
@@ -1434,7 +1447,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
             BtreePage pg = pageStack[sp-1];
             currPos = pos;
             currPage = pg;
-            E curr = (E)getCurrent(pg, pos);
+            E curr = getCurrent(pg, pos);
             if (((StorageImpl)getStorage()).concurrentIterator) { 
                 currKey = new BtreeKey(pg.getKey(pos), pg.items.getRaw(pos));
             }
@@ -1459,8 +1472,8 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
             return oid;
         }
 
-        protected Object getCurrent(BtreePage pg, int pos) { 
-            return pg.items.get(pos);
+        protected E getCurrent(BtreePage pg, int pos) {
+            return RndBtree.cast(pg.items.get(pos));
         }
 
         protected final void gotoNextItem(BtreePage pg, int pos)
@@ -1589,8 +1602,8 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
             super(order);
         }
             
-        protected Object getCurrent(BtreePage pg, int pos) { 
-            return new BtreeEntry(pg, pos);
+        protected Map.Entry<Object,T> getCurrent(BtreePage pg, int pos) {
+            return new BtreeEntry<T>(pg, pos);
         }
     }
 
@@ -1663,7 +1676,7 @@ class RndBtree<T> extends PersistentCollection<T> implements Index<T> {
         if (i < 0 || i >= nElems) {
             throw new IndexOutOfBoundsException("Position " + i + ", index size "  + nElems);
         }            
-        return (T)root.getAt(i, height);
+        return RndBtree.cast(root.getAt(i, height));
     }
 
     public int indexOf(Key key) { 
