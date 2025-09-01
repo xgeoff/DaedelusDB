@@ -1,8 +1,5 @@
 package org.garret.perst.impl;
 import  org.garret.perst.*;
-import  java.io.IOException;
-import  java.nio.MappedByteBuffer;
-import  java.nio.channels.FileChannel;
 
 class PagePool { 
     LRU     lru;
@@ -10,7 +7,7 @@ class PagePool {
     Page    hashTable[];
     int     poolSize;
     boolean autoExtended;
-    FileChannel file;
+    IFile file;
     boolean noFlush;
     long    lruLimit;
 
@@ -173,7 +170,7 @@ class PagePool {
         }
     }
 
-    final void open(FileChannel f, boolean noFlush)
+    final void open(IFile f, boolean noFlush)
     {
         file = f;
         this.noFlush = noFlush;
@@ -201,11 +198,7 @@ class PagePool {
     }
 
     final synchronized void close() {
-        try {
-            file.close();
-        } catch (IOException x) {
-            throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
-        }
+        file.close();
         hashTable = null;
         dirtyPages = null;
         lru = null;
@@ -309,39 +302,16 @@ class PagePool {
     }
 
     private void writePage(long pos, byte[] buf) {
-        try {
-            MappedByteBuffer mbb = file.map(FileChannel.MapMode.READ_WRITE, pos, Page.pageSize);
-            mbb.put(buf, 0, Page.pageSize);
-            if (!noFlush) {
-                mbb.force();
-            }
-        } catch (IOException x) {
-            throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
-        }
+        file.write(pos, buf);
     }
 
     private int readPage(long pos, byte[] buf) {
-        try {
-            long size = file.size();
-            if (pos >= size) {
-                return 0;
-            }
-            int len = (int)Math.min(Page.pageSize, size - pos);
-            MappedByteBuffer mbb = file.map(FileChannel.MapMode.READ_ONLY, pos, len);
-            mbb.get(buf, 0, len);
-            return len;
-        } catch (IOException x) {
-            throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
-        }
+        return file.read(pos, buf);
     }
 
     private void syncFile() {
         if (!noFlush) {
-            try {
-                file.force(true);
-            } catch (IOException x) {
-                throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
-            }
+            file.sync();
         }
     }
 }

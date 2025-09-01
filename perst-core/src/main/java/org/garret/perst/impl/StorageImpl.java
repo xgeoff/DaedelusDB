@@ -6,11 +6,7 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.time.Instant;
 import java.io.*;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.concurrent.*;
 
 public class StorageImpl implements Storage {
@@ -1011,11 +1007,6 @@ public class StorageImpl implements Storage {
     }
 
     @Override
-    public void open(IFile file, long pagePoolSize) {
-        throw new UnsupportedOperationException("IFile access is not supported");
-    }
-
-    @Override
     public void open(IFile file) {
         open(file, DEFAULT_PAGE_POOL_SIZE);
     }
@@ -1025,18 +1016,12 @@ public class StorageImpl implements Storage {
     }
 
     public synchronized void open(Path filePath, long pagePoolSize) {
+        IFile f = new OSFile(filePath.toString(), readOnly, noFlush);
         try {
-            FileChannel ch = readOnly
-                ? FileChannel.open(filePath, StandardOpenOption.READ)
-                : FileChannel.open(filePath, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-            try {
-                open(ch, pagePoolSize);
-            } catch (StorageError ex) {
-                ch.close();
-                throw ex;
-            }
-        } catch (IOException x) {
-            throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
+            open(f, pagePoolSize);
+        } catch (StorageError ex) {
+            f.close();
+            throw ex;
         }
     }
 
@@ -1068,7 +1053,7 @@ public class StorageImpl implements Storage {
     }
 
 
-    protected void initialize(FileChannel file, long pagePoolSize) {
+    protected void initialize(IFile file, long pagePoolSize) {
         this.file = file;
         if (lockFile && !multiclientSupport) {
             if (!tryLock(readOnly)) {
@@ -1117,7 +1102,8 @@ public class StorageImpl implements Storage {
         writerThreadRunning = false;
     }
 
-    public synchronized void open(FileChannel file, long pagePoolSize) {
+    @Override
+    public synchronized void open(IFile file, long pagePoolSize) {
         Page pg;
         int i;
 
@@ -1282,46 +1268,19 @@ public class StorageImpl implements Storage {
     }
 
     private int read(long pos, byte[] buf) {
-        try {
-            long size = file.size();
-            if (pos >= size) {
-                return 0;
-            }
-            int len = (int)Math.min(buf.length, size - pos);
-            MappedByteBuffer mbb = file.map(FileChannel.MapMode.READ_ONLY, pos, len);
-            mbb.get(buf, 0, len);
-            return len;
-        } catch (IOException x) {
-            throw new StorageError(StorageError.FILE_ACCESS_ERROR, x);
-        }
+        return file.read(pos, buf);
     }
 
     private boolean tryLock(boolean shared) {
-        try {
-            fileLock = file.tryLock(0, Long.MAX_VALUE, shared);
-            return fileLock != null;
-        } catch (IOException x) {
-            return true;
-        }
+        return file.tryLock(shared);
     }
 
     private void lock(boolean shared) {
-        try {
-            fileLock = file.lock(0, Long.MAX_VALUE, shared);
-        } catch (IOException x) {
-            throw new StorageError(StorageError.LOCK_FAILED, x);
-        }
+        file.lock(shared);
     }
 
     private void unlock() {
-        try {
-            if (fileLock != null) {
-                fileLock.release();
-                fileLock = null;
-            }
-        } catch (IOException x) {
-            throw new StorageError(StorageError.LOCK_FAILED, x);
-        }
+        file.unlock();
     }
 
     public synchronized void startWriterThread() {
@@ -5779,8 +5738,7 @@ public class StorageImpl implements Storage {
     volatile boolean writerThreadRunning;
 
     long      transactionId;
-    FileChannel file;
-    FileLock   fileLock;
+    IFile file;
 
     int       nNestedTransactions;
     int       nBlockedTransactions;
