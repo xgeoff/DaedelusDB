@@ -23,15 +23,27 @@ class AltPersistentSet<T> extends AltBtree<T> implements IPersistentSet<T> {
         return i.hasNext();
     }
     
-    public <E> E[] toArray(E[] arr) { 
-        return (E[])super.toArray((T[])arr);
+    @SuppressWarnings("unchecked")
+    public <E> E[] toArray(E[] arr) {
+        Class<?> component = arr.getClass().getComponentType();
+        if (component != Object.class && nElems > 0) {
+            Iterator<T> it = iterator();
+            if (it.hasNext() && !component.isInstance(it.next())) {
+                throw new ArrayStoreException();
+            }
+        }
+        return (E[])super.toArray(arr);
     }
 
     public boolean add(T obj) { 
         return put(new Key(obj), obj);
     }
 
-    public boolean remove(Object o) { 
+    @SuppressWarnings("unchecked")
+    public boolean remove(Object o) {
+        if (!(o instanceof IPersistent)) {
+            return false;
+        }
         T obj = (T)o;
         return removeIfExists(new BtreeKey(checkKey(new Key(obj)), obj));
     }
