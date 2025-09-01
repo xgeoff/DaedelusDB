@@ -4,17 +4,18 @@ import  org.garret.perst.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-class FieldValue implements Comparable<FieldValue> { 
-    Comparable value;
-    Object     obj;
-    
-    public int compareTo(FieldValue f) { 
+class FieldValue implements Comparable<FieldValue> {
+    Comparable<Object> value;
+    Object             obj;
+
+    public int compareTo(FieldValue f) {
         return value.compareTo(f.value);
     }
-    
-    FieldValue(Object obj, Object value) { 
+
+    @SuppressWarnings("unchecked")
+    FieldValue(Object obj, Object value) {
         this.obj = obj;
-        this.value = (Comparable)value;
+        this.value = (Comparable<Object>)value;
     }
 }
         
