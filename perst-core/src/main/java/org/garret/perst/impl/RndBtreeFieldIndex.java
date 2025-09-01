@@ -4,7 +4,21 @@ import  org.garret.perst.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-class RndBtreeFieldIndex<T> extends RndBtree<T> implements FieldIndex<T> { 
+class IndexEntry<T> implements Comparable<IndexEntry<T>> {
+    Comparable value;
+    T obj;
+
+    public int compareTo(IndexEntry<T> e) {
+        return value.compareTo(e.value);
+    }
+
+    IndexEntry(T obj, Object value) {
+        this.obj = obj;
+        this.value = (Comparable)value;
+    }
+}
+
+class RndBtreeFieldIndex<T> extends RndBtree<T> implements FieldIndex<T> {
     String className;
     String fieldName;
     long   autoincCount;
@@ -140,20 +154,21 @@ class RndBtreeFieldIndex<T> extends RndBtree<T> implements FieldIndex<T> {
         return super.set(key, obj);
     }
 
+    @SuppressWarnings("unchecked")
     public boolean addAll(Collection<? extends T> c) {
-        FieldValue[] arr = new FieldValue[c.size()];
+        IndexEntry<T>[] arr = (IndexEntry<T>[]) new IndexEntry[c.size()];
         Iterator<? extends T> e = c.iterator();
-        try { 
+        try {
             for (int i = 0; e.hasNext(); i++) {
                 T obj = e.next();
-                arr[i] = new FieldValue(obj, fld.get(obj));
+                arr[i] = new IndexEntry<>(obj, fld.get(obj));
             }
-        } catch (Exception x) { 
+        } catch (Exception x) {
             throw new StorageError(StorageError.ACCESS_VIOLATION, x);
         }
         Arrays.sort(arr);
         for (int i = 0; i < arr.length; i++) {
-            add((T)arr[i].obj);
+            add(arr[i].obj);
         }
         return arr.length > 0;
     }
